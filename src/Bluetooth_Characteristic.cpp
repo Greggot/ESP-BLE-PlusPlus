@@ -1,10 +1,15 @@
 #include <Bluetooth.hpp>
+#include <cstring>
+
+#define MAX_MTU 22
 
 Characteristic::Characteristic()
 { 
 
     UUID_Init(0x00FF);
-    setData(nullptr, 0);
+    
+    this->Data = nullptr;
+    this->DataSize = 0;
 
     this->Permition = ESP_GATT_PERM_READ;
     this->Property = ESP_GATT_CHAR_PROP_BIT_READ | ESP_GATT_CHAR_PROP_BIT_NOTIFY;
@@ -13,7 +18,8 @@ Characteristic::Characteristic()
 Characteristic::Characteristic(uint32_t _UUID)
 { 
     UUID_Init(_UUID);
-    setData(nullptr, 0);
+    this->Data = nullptr;
+    this->DataSize = 0;
 
     this->Permition = ESP_GATT_PERM_READ;
     this->Property = ESP_GATT_CHAR_PROP_BIT_READ | ESP_GATT_CHAR_PROP_BIT_NOTIFY;
@@ -26,8 +32,8 @@ Characteristic::Characteristic(uint8_t _UUID[ESP_UUID_LEN_128])
     
     this->UUID.len = ESP_UUID_LEN_128;
 
-    setData(nullptr, 0);
-    setDataMexLength(600);
+    this->Data = nullptr;
+    this->DataSize = 0;
 
     this->Permition = ESP_GATT_PERM_READ;
     this->Property = ESP_GATT_CHAR_PROP_BIT_READ | ESP_GATT_CHAR_PROP_BIT_NOTIFY;
@@ -36,6 +42,8 @@ Characteristic::Characteristic(uint8_t _UUID[ESP_UUID_LEN_128])
 Characteristic::Characteristic(uint32_t _UUID, esp_gatt_perm_t Permition, esp_gatt_char_prop_t Property)
 {
     UUID_Init(_UUID);
+    this->Data = nullptr;
+    this->DataSize = 0;
     this->Permition = Permition;
     this->Property = Property;
 
@@ -46,6 +54,8 @@ Characteristic::Characteristic(uint8_t _UUID[ESP_UUID_LEN_128], esp_gatt_perm_t 
         this->UUID.uuid.uuid128[i] = _UUID[i];
     
     this->UUID.len = ESP_UUID_LEN_128;
+    this->Data = nullptr;
+    this->DataSize = 0;
 
     this->Permition = Permition;
     this->Property = Property;
@@ -59,19 +69,18 @@ esp_err_t Characteristic::AttachToService(uint16_t ServiceHandler)
     {
         esp_bt_uuid_t DESCR_DATA_UUID;
             DESCR_DATA_UUID.len = ESP_UUID_LEN_16;
-            DESCR_DATA_UUID.uuid.uuid16 = 0x2902; 
+            DESCR_DATA_UUID.uuid.uuid16 = ESP_GATT_UUID_CHAR_CLIENT_CONFIG; 
 
         ret |= esp_ble_gatts_add_char_descr(ServiceHandler, &DESCR_DATA_UUID, 
                                     ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
                                     NULL,
                                     NULL);
     }
-
-    //printf("Error: %02X\n", ret);
     return ret;
 }
 
-void Characteristic::InfoOut()
+#ifdef BLE_CHARACTERISTICS_PRINTF
+void Characteristic::ConsoleInfoOut()
 {
     printf("UUID: ");
     if(this->UUID.len == ESP_UUID_LEN_16)
@@ -81,6 +90,7 @@ void Characteristic::InfoOut()
 
     printf("Handler: %d\n", this->Handler);
 }
+#endif
 
 void Characteristic::UUID_Init(uint32_t _UUID)
 {
@@ -101,26 +111,23 @@ void Characteristic::callReadHandler(esp_ble_gatts_cb_param_t *param)
     this->ReadHandler(this, param);
 }
 
+void Characteristic::callWriteHandler(esp_ble_gatts_cb_param_t *param)
+{
+    this->WriteHandler(this, param);
+}
+
 void Characteristic::DefaultReadCallback(Characteristic* ch, esp_ble_gatts_cb_param_t *param)
 {
     esp_gatt_rsp_t rsp;
     rsp.handle = ch->getHandler();
-    rsp.attr_value.len = ch->getData().attr_len;
-
-    for(int i = 0; i < ch->getData().attr_len; i++)
-        rsp.attr_value.value[i] = ch->getData().attr_value[i];
-
+    rsp.attr_value.len = ch->getDataSize();
+    memcpy(rsp.attr_value.value, ch->getData(), ch->getDataSize());
     esp_ble_gatts_send_response(ch->getGATTinterface(), param->read.conn_id, param->read.trans_id, ESP_GATT_OK, &rsp);
 }
 
 void Characteristic::DefaultWriteCallback(Characteristic* ch, esp_ble_gatts_cb_param_t *param)
 {
-    printf("Write Event Data:");
-    for(uint8_t i = 0; i < param->write.len; i++)
-        printf("%02X ", param->write.value[i]);
-    printf("\n");
-
-    esp_ble_gatts_send_response(ch->getGATTinterface(), param->read.conn_id, param->read.trans_id, ESP_GATT_OK, NULL);
+    ch->setData(param->write.value, param->write.len);
 }
 
 /**@brief Notify client with data array
@@ -128,31 +135,28 @@ void Characteristic::DefaultWriteCallback(Characteristic* ch, esp_ble_gatts_cb_p
  * @param Data Byte array
  * @param Data_Length Number of elements in the array
  * @param connected_device_id ID of connection
+ */ 
+void Characteristic::Notify(byte* Data, size_t DataSize, uint16_t ConnectedDeviceID)
+{
+    if(this->Property & ESP_GATT_CHAR_PROP_BIT_NOTIFY)
+        esp_ble_gatts_send_indicate(GATTinterface, ConnectedDeviceID, Handler, DataSize, Data, false);
+}
+
+/**@brief Set Inner Characteristic Data 
+ * @param Data Dynamic allocated array
+ * @param DataSize Size, maximum value - 516
+ * 
  */
-void Characteristic::Notify(byte* Data, size_t Data_Length, uint16_t connected_device_id)
+void Characteristic::setData(const byte* Data, size_t DataSize)
 {
-    if((this->Property & ESP_GATT_CHAR_PROP_BIT_NOTIFY) == ESP_GATT_CHAR_PROP_BIT_NOTIFY)
-        esp_ble_gatts_send_indicate(GATT_Interface, connected_device_id, Handler, Data_Length, Data, false);
-}
-
-void Characteristic::setHandler(uint16_t value)
-{
-    Handler = value;
-}
-void Characteristic::setGATTinterface(esp_gatt_if_t value)
-{
-    GATT_Interface = value;
-}
-
-void Characteristic::setDataMexLength(size_t Data_Max_Length)
-{
-    this->Char_Data.attr_max_len = Data_Max_Length;
-}
-
-void Characteristic::setData(byte* Data, size_t Data_Length)
-{
-    if(Data_Length > this->Char_Data.attr_max_len)
-        this->Char_Data.attr_max_len = Data_Length;
-    this->Char_Data.attr_len = Data_Length;
-    this->Char_Data.attr_value = Data;
+    if(this->Data != nullptr)
+    {
+        byte* DataToClear = this->Data;
+        delete(DataToClear);
+    }
+    DataSize = DataSize > (ESP_GATT_MAX_MTU_SIZE - 1) ? ESP_GATT_MAX_MTU_SIZE - 1 : DataSize;
+    this->Data = new byte[DataSize];
+    this->DataSize = DataSize;
+    
+    memcpy(this->Data, Data, this->DataSize);
 }

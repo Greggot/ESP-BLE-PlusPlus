@@ -30,9 +30,24 @@ Service::Service(uint32_t _UUID, std::vector<Characteristic*> Characteristics)
     this->service_id.id.uuid = this->UUID;
 
     this->Characteristics = Characteristics;
+    this->CharacteristicsSize = Characteristics.size();
 }
 
-void Service::GetInfo()
+/*Service::Service(uint32_t _UUID, Characteristic** Characteristics, size_t CharacteristicsSize)
+{
+    this->service_id.is_primary = true;
+    this->service_id.id.inst_id = 0x00;
+    UUID_Init(_UUID);
+    this->service_id.id.uuid = this->UUID;
+
+    this->Characteristics = Characteristics;
+    this->CharacteristicsSize = CharacteristicsSize;
+    printf("Provided Characteristics:\n");
+    for(size_t i = 0; i < CharacteristicsSize; i++)
+        Characteristics[i]->InfoOut();
+}*/
+#ifdef BLE_SERVICES_PRINTF
+void Service::ConsoleInfoOut()
 {
     printf("UUID: ");
     if(this->UUID.len == ESP_UUID_LEN_16)
@@ -42,27 +57,27 @@ void Service::GetInfo()
 
     printf("Handler: %d\n", this->Handler);
 }
+#endif
 
 void Service::Create()
 {
-    this->num_handle = 4 + (Characteristics.capacity() << 1);
-    if(esp_ble_gatts_create_service(this->GATTinterface, &service_id, num_handle) == ESP_OK)
-        printf("\tService Created!\n");
+    this->num_handle = 4 + (CharacteristicsSize << 1);
+    esp_ble_gatts_create_service(this->GATTinterface, &service_id, num_handle);
 }
 
 void Service::Start()
 {
     esp_ble_gatts_start_service(this->Handler);
-    for(Characteristic* ch : Characteristics)
+    for(size_t i = 0; i < CharacteristicsSize; i++)
     {
-        ch->AttachToService(this->Handler);
-        ch->setGATTinterface(this->GATTinterface);
+        Characteristics[i]->AttachToService(this->Handler);
+        Characteristics[i]->setGATTinterface(this->GATTinterface);
     }
 }
 
 void Service::setGATTinterface(esp_gatt_if_t GATT_Interface)
 { 
     this->GATTinterface = GATT_Interface; 
-    for(Characteristic* ch : Characteristics)
-        ch->setGATTinterface(GATT_Interface);
+    for(size_t i = 0; i < CharacteristicsSize; i++)
+        Characteristics[i]->setGATTinterface(GATT_Interface);
 }

@@ -1,30 +1,53 @@
 #include <Bluetooth.hpp>
-
-ServerDevice::ServerDevice(const char* Name)
-{
-    this->Name = Name;
-}
+#include <Bluetooth_GAP.hpp>
+static const uint8_t MaxEventNumber = 24;
 
 ServerDevice::ServerDevice()
 {
     this->Name = "Unnamed_BLE_Device";
 }
 
- ServerDevice::ServerDevice(const char* Name, esp_ble_adv_data_t adv_data, esp_ble_adv_data_t scan_rsp_data, esp_ble_adv_params_t adv_params, std::vector<Service*> SERVICE)
- {
+ServerDevice::ServerDevice(const char* Name)
+{
     this->Name = Name;
-    this->adv_data = adv_data;
-    this->scan_rsp_data = scan_rsp_data;
-    this->adv_params = adv_params;
+}
+
+ServerDevice::ServerDevice(const char* Name, esp_ble_adv_data_t AdvertisingData, esp_ble_adv_data_t ScanResponceData,
+                            esp_ble_adv_params_t AdvertisingParameters, std::vector<Service*> SERVICE)
+{
+    this->Name = Name;
+    this->AdvertisingData = AdvertisingData;
+    this->ScanResponceData = ScanResponceData;
+    this->AdvertisingParameters = AdvertisingParameters;
 
     this->SERVICE = SERVICE;
- }
 
+    ESP_ERROR_CHECK(esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT));
+
+    esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
+    if(esp_bt_controller_init(&bt_cfg) == ESP_OK)
+        printf("Controller Initialized\n");
+
+    if(esp_bt_controller_enable(ESP_BT_MODE_BLE) == ESP_OK)
+        printf("Controller Enabled\n");
+    
+    if(esp_bluedroid_init() == ESP_OK)
+        printf("Bluedroid Initialized\n");
+    
+    if(esp_bluedroid_enable() == ESP_OK)
+        printf("Bluedroid Enabled\n");
+    //esp_err_t local_mtu_ret = esp_ble_gatt_set_local_mtu(500);
+}
+
+/**@brief Apply device name, apply GATT interface and set Advertising
+ */ 
 void ServerDevice::Start(esp_gatt_if_t GATT_Interface)
 {
+    this->GATT_Interface = GATT_Interface;
+
     esp_ble_gap_set_device_name(Name);
-    esp_ble_gap_config_adv_data(&adv_data);
-    esp_ble_gap_config_adv_data(&scan_rsp_data);
+    esp_ble_gap_config_adv_data(&AdvertisingData);
+    esp_ble_gap_config_adv_data(&ScanResponceData);
 
     for(Service* srv : SERVICE)
     {
@@ -33,93 +56,42 @@ void ServerDevice::Start(esp_gatt_if_t GATT_Interface)
     }
 }
 
-
-static bool isHandled;
 void ServerDevice::DeviceCallback(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param)
 {
+    for(int callind : callbackIndexes)
+        if(static_cast<int>(event) == callind)
+            GATTeventsCallbacks[callind](this, param);
+
     switch (event) 
     {
     case ESP_GATTS_REG_EVT:
-        printf("Services: %i\n", SERVICE.size());
+        this->Start(gatts_if);
         break;
     case ESP_GATTS_READ_EVT:
-    {
-        isHandled = false;
-        for(Service* serv : SERVICE)
-        {
-            for(Characteristic* ch : serv->getCharacteristics())
-            {
-                if(ch->getHandler() == param->read.handle)
-                {
-                    ch->callReadHandler(param);
-                    isHandled = true;
-                    break;
-                }
-            }
-            if(isHandled)
-                break;
-        }
-    }   
+        AllCharacteristics[param->read.handle]->callReadHandler(param);   
         break;
     case ESP_GATTS_WRITE_EVT:
-    {
-        isHandled = false;
-        for(Service* serv : SERVICE)
+    { 
+        esp_ble_gatts_send_response(gatts_if, param->write.conn_id, param->write.trans_id, ESP_GATT_OK, NULL);
+        if(AllCharacteristics.find(param->write.handle) != AllCharacteristics.end())
         {
-            for(Characteristic* ch : serv->getCharacteristics())
-            {
-                if(ch->getHandler() == param->write.handle)
-                {
-
-                    esp_ble_gatts_send_response(ch->getGATTinterface(), param->write.conn_id, param->write.trans_id, ESP_GATT_OK, NULL);
-
-                    isHandled = true;
-                    break;
-                }
-            }
+            AllCharacteristics[param->write.handle]->callWriteHandler(param);
         }
-        if(isHandled)
-            break;
+
+        #ifdef BLE_INPUT_PRINTF
+        printf("%d Accepted a string (conn id = %d, trans id %d) of %d bytes: ", param->write.handle, param->write.conn_id, param->write.trans_id, param->write.len);
+        for(uint16_t i = 0; i < param->write.len; i++)
+            printf("%02X ", param->write.value[i]);
+        printf("\n");
+        #endif
     }
         break;
-    
     case ESP_GATTS_EXEC_WRITE_EVT:
         esp_ble_gatts_send_response(gatts_if, param->write.conn_id, param->write.trans_id, ESP_GATT_OK, NULL);
         break;
     case ESP_GATTS_DISCONNECT_EVT:
-        printf("Diconnected. Reason: ");
-        switch(param->disconnect.reason)
-        {
-        case ESP_GATT_CONN_UNKNOWN:                        
-            printf("Gatt connection unknown");
-            break;
-        case ESP_GATT_CONN_L2C_FAILURE:                 
-            printf("General L2cap failure");
-            break;
-        case ESP_GATT_CONN_TIMEOUT:
-            printf("Connection timeout ");
-            break;
-        case ESP_GATT_CONN_TERMINATE_PEER_USER:
-            printf("Connection terminate by peer user ");
-            break;
-        case ESP_GATT_CONN_TERMINATE_LOCAL_HOST:    
-            printf("Connection terminated by local host");
-            break;
-        case ESP_GATT_CONN_FAIL_ESTABLISH:         
-            printf("Connection fail to establish " );
-            break;
-        case ESP_GATT_CONN_LMP_TIMEOUT:            
-            printf("Connection fail for LMP response tout");
-            break;
-        case ESP_GATT_CONN_CONN_CANCEL:            
-            printf("L2CAP connection cancelled ");
-            break;
-        case ESP_GATT_CONN_NONE:  
-            printf("None Connection to Cancel");
-            break;
-        }
-        printf("\n");
-        esp_ble_gap_start_advertising(&this->adv_params);
+        printf("Disconnected!\n");
+        esp_ble_gap_start_advertising(&adv_params);
         break;
 
     case ESP_GATTS_CONNECT_EVT: 
@@ -128,13 +100,11 @@ void ServerDevice::DeviceCallback(esp_gatts_cb_event_t event, esp_gatt_if_t gatt
         for(uint8_t i = 0; i < ESP_BD_ADDR_LEN; i++)
             conn_params.bda[i] = param->connect.remote_bda[i];
 
-        /* For the IOS system, please reference the apple official documents about the ble connection parameters restrictions. */
-#ifndef BLE_IOS_PARAMETERS
+        // These're the fastest parameters with a speed of 100KB/18s (5.5KB/s)
         conn_params.latency = 0;
-        conn_params.max_int = 1000;    // max_int = 0x20*1.25ms = 40ms
-        conn_params.min_int = 6;    // min_int = 0x10*1.25ms = 20ms
-        conn_params.timeout = 600;    // timeout = 400*10ms = 4000ms
-#endif
+        conn_params.max_int = 0x10;    // max_int = 0x10*1.25ms = 20ms
+        conn_params.min_int = 6;    // min_int = 6*1.25ms = 7.5ms, Android minimum
+        conn_params.timeout = 400;    // timeout = 400*10ms = 4000ms
         
         esp_ble_gap_update_conn_params(&conn_params);
         break;
@@ -143,21 +113,30 @@ void ServerDevice::DeviceCallback(esp_gatts_cb_event_t event, esp_gatt_if_t gatt
     case ESP_GATTS_CREATE_EVT:
         SERVICE[ServiceInitializeCounter]->setHandler(param->create.service_handle);
         SERVICE[ServiceInitializeCounter]->Start();
-        printf("Service created - %d with %d chars\n", param->create.service_handle, SERVICE[ServiceInitializeCounter]->getCharacteristics().size());
-        AmountOfChars.push_back(SERVICE[ServiceInitializeCounter]->getCharacteristics().size());
+
+        AllServices.insert({param->create.service_handle, SERVICE[ServiceInitializeCounter]});
+
+        #ifdef BLE_SERVICES_PRINTF
+        printf("Service created - %d with %d chars\n", param->create.service_handle, SERVICE[ServiceInitializeCounter]->getCharacteristicsSize());
+        #endif
+
+        AmountOfChars.push_back(SERVICE[ServiceInitializeCounter]->getCharacteristicsSize());
         ServiceInitializeCounter++;
         if(ServiceInitializeCounter == SERVICE.size())
         {
             ServiceInitializeCounter = 0;
             CharacteristicInitializeCount = 0;
         }
-        //printf("%d\'s chars amount - %d\n", param->create.service_handle, CharacteristicInitializeCountMax);
         break;
     case ESP_GATTS_ADD_CHAR_EVT:
         CharacteristicInitializeCountMax = AmountOfChars[ServiceInitializeCounter];
+        #ifdef BLE_CHARACTERISTICS_PRINTF
         printf("\tChar created - %d out of %d with host %d\n", param->add_char.attr_handle, CharacteristicInitializeCountMax, SERVICE[ServiceInitializeCounter]->getHandler());
+        #endif
+
         SERVICE[ServiceInitializeCounter]->getCharacteristics()[CharacteristicInitializeCount]->setHandler(param->add_char.attr_handle);
-        
+        AllCharacteristics.insert({param->add_char.attr_handle, SERVICE[ServiceInitializeCounter]->getCharacteristics()[CharacteristicInitializeCount]});
+
         CharacteristicInitializeCount++;
         if(CharacteristicInitializeCount == CharacteristicInitializeCountMax)
         {
@@ -167,6 +146,8 @@ void ServerDevice::DeviceCallback(esp_gatts_cb_event_t event, esp_gatt_if_t gatt
 
         break;
     case ESP_GATTS_MTU_EVT:
+        printf("New MTU size: %d\n", param->mtu.mtu);
+        break;
     case ESP_GATTS_UNREG_EVT:
     case ESP_GATTS_ADD_INCL_SRVC_EVT:
     case ESP_GATTS_ADD_CHAR_DESCR_EVT:
@@ -182,4 +163,15 @@ void ServerDevice::DeviceCallback(esp_gatts_cb_event_t event, esp_gatt_if_t gatt
     default:
         break;
     }
+}
+
+static int eventNumber;
+void ServerDevice::setDeviceGATTeventCallback(esp_gatts_cb_event_t Event, BLEcallbackType* Callback)
+{
+    eventNumber = static_cast<int>(Event);
+    if(eventNumber > MaxEventNumber)
+        return;
+    
+    this->GATTeventsCallbacks[eventNumber] = Callback;
+    callbackIndexes.push_back(eventNumber);
 }
