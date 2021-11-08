@@ -3,45 +3,11 @@
 
 #define MAX_MTU 22
 
-Characteristic::Characteristic()
-{ 
-
-    UUID_Init(0x00FF);
-    
-    this->Data = nullptr;
-    this->DataSize = 0;
-
-    this->Permition = ESP_GATT_PERM_READ;
-    this->Property = ESP_GATT_CHAR_PROP_BIT_READ | ESP_GATT_CHAR_PROP_BIT_NOTIFY;
-}
-
-Characteristic::Characteristic(uint32_t _UUID)
-{ 
-    UUID_Init(_UUID);
-    this->Data = nullptr;
-    this->DataSize = 0;
-
-    this->Permition = ESP_GATT_PERM_READ;
-    this->Property = ESP_GATT_CHAR_PROP_BIT_READ | ESP_GATT_CHAR_PROP_BIT_NOTIFY;
-}
-
-Characteristic::Characteristic(uint8_t _UUID[ESP_UUID_LEN_128])
-{
-    for(uint8_t i = 0; i < ESP_UUID_LEN_128; i++) 
-        this->UUID.uuid.uuid128[i] = _UUID[i];
-    
-    this->UUID.len = ESP_UUID_LEN_128;
-
-    this->Data = nullptr;
-    this->DataSize = 0;
-
-    this->Permition = ESP_GATT_PERM_READ;
-    this->Property = ESP_GATT_CHAR_PROP_BIT_READ | ESP_GATT_CHAR_PROP_BIT_NOTIFY;
-}
-
 Characteristic::Characteristic(uint32_t _UUID, esp_gatt_perm_t Permition, esp_gatt_char_prop_t Property)
 {
-    UUID_Init(_UUID);
+    this->UUID.len = _UUID & 0xFFFF0000 ? sizeof(uint32_t) : sizeof(uint16_t);
+    memcpy(&this->UUID.uuid, &_UUID, this->UUID.len);
+
     this->Data = nullptr;
     this->DataSize = 0;
     this->Permition = Permition;
@@ -50,8 +16,7 @@ Characteristic::Characteristic(uint32_t _UUID, esp_gatt_perm_t Permition, esp_ga
 }
 Characteristic::Characteristic(uint8_t _UUID[ESP_UUID_LEN_128], esp_gatt_perm_t Permition, esp_gatt_char_prop_t Property)
 {
-    for(uint8_t i = 0; i < ESP_UUID_LEN_128; i++) 
-        this->UUID.uuid.uuid128[i] = _UUID[i];
+    memcpy(this->UUID.uuid.uuid128, _UUID, ESP_UUID_LEN_128);
     
     this->UUID.len = ESP_UUID_LEN_128;
     this->Data = nullptr;
@@ -91,20 +56,6 @@ void Characteristic::ConsoleInfoOut()
     printf("Handler: %d\n", this->Handler);
 }
 #endif
-
-void Characteristic::UUID_Init(uint32_t _UUID)
-{
-    if(_UUID <= 0xFFFF)
-    {
-        this->UUID.len = ESP_UUID_LEN_16;
-        this->UUID.uuid.uuid16 = _UUID;
-    }
-    else
-    {
-        this->UUID.len = ESP_UUID_LEN_32;
-        this->UUID.uuid.uuid32 = _UUID;
-    }
-}
 
 void Characteristic::callReadHandler(esp_ble_gatts_cb_param_t *param)
 {

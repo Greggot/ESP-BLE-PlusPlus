@@ -1,3 +1,4 @@
+#pragma once
 #include "esp_event.h"
 
 #include "esp_bt.h"
@@ -12,12 +13,9 @@
 #include <vector>
 #include <map>
 
-#ifndef INC_BLUETOOTH_HPP
-#define INC_BLUETOOTH_HPP
-
 #define BLE_SERVICES_PRINTF
 #define BLE_CHARACTERISTICS_PRINTF
-#define BLE_INPUT_PRINTF
+// #define BLE_INPUT_PRINTF
 
 typedef __uint8_t byte;
 
@@ -45,8 +43,6 @@ class Characteristic
         static void DefaultWriteCallback(Characteristic*, esp_ble_gatts_cb_param_t*);
         BLEcallbackType* WriteHandler = &DefaultWriteCallback;
 
-        void UUID_Init(uint32_t _UUID);
-        bool sendMutex = false;
     public:
         void ConsoleInfoOut(); 
 
@@ -72,10 +68,6 @@ class Characteristic
         esp_err_t AttachToService(uint16_t ServiceHandler);
 
         void Notify(byte* Data, size_t Data_Length, uint16_t connected_device_id = 0);
-
-        Characteristic();
-        Characteristic(uint32_t _UUID);
-        Characteristic(uint8_t _UUID[ESP_UUID_LEN_128]);
 
         Characteristic(uint32_t _UUID, esp_gatt_perm_t, esp_gatt_char_prop_t);
         Characteristic(uint8_t _UUID[ESP_UUID_LEN_128], esp_gatt_perm_t, esp_gatt_char_prop_t);
@@ -107,9 +99,7 @@ class Service
         size_t getCharacteristicsSize() { return this->CharacteristicsSize; }
         uint16_t getHandler() { return this->Handler; }
 
-        Service();
         Service(uint32_t _UUID, std::vector<Characteristic*> Characteristics);
-        //Service(uint32_t _UUID, Characteristic** Characteristics, size_t CharacteristicsSize);
 
         void Start();
         void Create();
@@ -160,5 +150,3 @@ class ServerDevice
         void Start(esp_gatt_if_t GATT_Interface);
         void AddService(Service* service) { SERVICE.push_back(service); }
 };
-
-#endif

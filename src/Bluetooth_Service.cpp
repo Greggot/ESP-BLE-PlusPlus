@@ -1,4 +1,5 @@
 #include <Bluetooth.hpp>
+#include <cstring>
 
 void Service::UUID_Init(uint32_t _UUID)
 {
@@ -14,38 +15,19 @@ void Service::UUID_Init(uint32_t _UUID)
     }
 }
 
-Service::Service()
-{
-    this->service_id.is_primary = true;
-    this->service_id.id.inst_id = 0x00;
-    UUID_Init(0xFF);
-    this->service_id.id.uuid = this->UUID;
-}
-
 Service::Service(uint32_t _UUID, std::vector<Characteristic*> Characteristics)
 {
     this->service_id.is_primary = true;
     this->service_id.id.inst_id = 0x00;
-    UUID_Init(_UUID);
+    
+    this->UUID.len = _UUID & 0xFFFF0000 ? sizeof(uint32_t) : sizeof(uint16_t);
+    memcpy(&this->UUID.uuid, &_UUID, this->UUID.len);
     this->service_id.id.uuid = this->UUID;
 
     this->Characteristics = Characteristics;
     this->CharacteristicsSize = Characteristics.size();
 }
 
-/*Service::Service(uint32_t _UUID, Characteristic** Characteristics, size_t CharacteristicsSize)
-{
-    this->service_id.is_primary = true;
-    this->service_id.id.inst_id = 0x00;
-    UUID_Init(_UUID);
-    this->service_id.id.uuid = this->UUID;
-
-    this->Characteristics = Characteristics;
-    this->CharacteristicsSize = CharacteristicsSize;
-    printf("Provided Characteristics:\n");
-    for(size_t i = 0; i < CharacteristicsSize; i++)
-        Characteristics[i]->InfoOut();
-}*/
 #ifdef BLE_SERVICES_PRINTF
 void Service::ConsoleInfoOut()
 {
