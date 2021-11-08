@@ -1,10 +1,10 @@
 #include <Bluetooth.hpp>
-#include <Bluetooth_GAP.hpp>
+#include <BluetoothGAP.h>
 static const uint8_t MaxEventNumber = 24;
 
 ServerDevice::ServerDevice()
 {
-    this->Name = "Unnamed_BLE_Device";
+    this->Name = "Unnamed_BLE_Device"; 
 }
 
 ServerDevice::ServerDevice(const char* Name)
