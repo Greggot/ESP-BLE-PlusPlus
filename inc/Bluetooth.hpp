@@ -15,7 +15,7 @@
 
 #define BLE_SERVICES_PRINTF
 #define BLE_CHARACTERISTICS_PRINTF
-// #define BLE_INPUT_PRINTF
+#define BLE_INPUT_PRINTF
 
 typedef __uint8_t byte;
 
@@ -35,7 +35,8 @@ class Characteristic
         uint16_t Handler;
         esp_gatt_if_t GATTinterface;
 
-        byte* Data;
+        bool isAllocatedInside = false;
+        void* Data;
         size_t DataSize;
         
         static void DefaultReadCallback(Characteristic*, esp_ble_gatts_cb_param_t*);
@@ -54,11 +55,12 @@ class Characteristic
         void setPermition(esp_gatt_perm_t Permition) { this->Permition = Permition; }
         void setProperty(esp_gatt_char_prop_t Property) {this->Property = Property; }
         void setData(const byte* Data, size_t DataSize);
+        void setDynamicData(void* Data, size_t DataSize);
 
         /* GETters */
         esp_gatt_if_t getGATTinterface() { return this->GATTinterface; }
         uint16_t getHandler() { return this->Handler; }
-        byte* getData() { return this->Data; }
+        void* getData() { return this->Data; }
         size_t getDataSize() { return this->DataSize; }
 
         /* CALLers */
@@ -67,7 +69,7 @@ class Characteristic
 
         esp_err_t AttachToService(uint16_t ServiceHandler);
 
-        void Notify(byte* Data, size_t Data_Length, uint16_t connected_device_id = 0);
+        void Notify(const byte* Data, size_t Data_Length, uint16_t connected_device_id = 0);
 
         Characteristic(uint32_t _UUID, esp_gatt_perm_t, esp_gatt_char_prop_t);
         Characteristic(uint8_t _UUID[ESP_UUID_LEN_128], esp_gatt_perm_t, esp_gatt_char_prop_t);

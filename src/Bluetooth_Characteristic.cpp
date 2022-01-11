@@ -69,10 +69,15 @@ void Characteristic::callWriteHandler(esp_ble_gatts_cb_param_t *param)
 
 void Characteristic::DefaultReadCallback(Characteristic* ch, esp_ble_gatts_cb_param_t *param)
 {
+    void* data = ch->getData();
+    size_t size = ch->getDataSize();
+    if(!data || !size)
+        return;
+
     esp_gatt_rsp_t rsp;
     rsp.handle = ch->getHandler();
-    rsp.attr_value.len = ch->getDataSize();
-    memcpy(rsp.attr_value.value, ch->getData(), ch->getDataSize());
+    rsp.attr_value.len = size;
+    memcpy(rsp.attr_value.value, data, size);
     esp_ble_gatts_send_response(ch->getGATTinterface(), param->read.conn_id, param->read.trans_id, ESP_GATT_OK, &rsp);
 }
 
@@ -81,33 +86,52 @@ void Characteristic::DefaultWriteCallback(Characteristic* ch, esp_ble_gatts_cb_p
     ch->setData(param->write.value, param->write.len);
 }
 
-/**@brief Notify client with data array
+/**
+ * @brief Notify client with data array
  * 
  * @param Data Byte array
  * @param Data_Length Number of elements in the array
  * @param connected_device_id ID of connection
  */ 
-void Characteristic::Notify(byte* Data, size_t DataSize, uint16_t ConnectedDeviceID)
+void Characteristic::Notify(const byte* Data, size_t DataSize, uint16_t ConnectedDeviceID)
 {
     if(this->Property & ESP_GATT_CHAR_PROP_BIT_NOTIFY)
-        esp_ble_gatts_send_indicate(GATTinterface, ConnectedDeviceID, Handler, DataSize, Data, false);
+        esp_ble_gatts_send_indicate(GATTinterface, ConnectedDeviceID, Handler, DataSize, (byte*)Data, false);
 }
 
-/**@brief Set Inner Characteristic Data 
- * @param Data Dynamic allocated array
+/**
+ * @brief Set Inner Characteristic Data 
+ * @param Data Array that will be copied into object's field
  * @param DataSize Size, maximum value - 516
  * 
  */
 void Characteristic::setData(const byte* Data, size_t DataSize)
 {
-    if(this->Data != nullptr)
+    if(this->Data && isAllocatedInside)
     {
-        byte* DataToClear = this->Data;
-        delete(DataToClear);
+        byte* DataToClear = (byte*)this->Data;
+        delete[] DataToClear;
     }
     DataSize = DataSize > (ESP_GATT_MAX_MTU_SIZE - 1) ? ESP_GATT_MAX_MTU_SIZE - 1 : DataSize;
     this->Data = new byte[DataSize];
     this->DataSize = DataSize;
     
     memcpy(this->Data, Data, this->DataSize);
+    isAllocatedInside = true;
+}
+/**
+ * @brief Set Extern Characteristic Data
+ * @param Data Dyncamic data allocated outside of class, DO NOT delete if characterisitc will refer it
+ * @param DataSize Size, has no maximum value
+*/
+void Characteristic::setDynamicData(void* Data, size_t DataSize)
+{
+    if(this->Data && isAllocatedInside)
+    {
+        byte* DataToClear = (byte*)this->Data;
+        delete[] DataToClear;
+    }
+    this->Data = Data;
+    this->DataSize = DataSize;
+    isAllocatedInside = false;
 }
