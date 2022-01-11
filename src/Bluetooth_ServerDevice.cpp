@@ -79,10 +79,15 @@ void ServerDevice::DeviceCallback(esp_gatts_cb_event_t event, esp_gatt_if_t gatt
         }
 
         #ifdef BLE_INPUT_PRINTF
-        printf("%d Accepted a string (conn id = %d, trans id %d) of %d bytes: ", param->write.handle, param->write.conn_id, param->write.trans_id, param->write.len);
-        for(uint16_t i = 0; i < param->write.len; i++)
-            printf("%02X ", param->write.value[i]);
-        printf("\n");
+        if(param->write.len < 40)
+        {
+            printf("%d Accepted a string (conn id = %d, trans id %d) of %d bytes: ", param->write.handle, param->write.conn_id, param->write.trans_id, param->write.len);
+            for(uint16_t i = 0; i < param->write.len; i++)
+                printf("%02X ", param->write.value[i]);
+            printf("\n");
+        }
+        else
+            printf("%d <- %dB (%d)\n", param->write.handle, param->write.len, param->write.trans_id);
         #endif
     }
         break;
