@@ -70,10 +70,14 @@ void Characteristic::callWriteHandler(esp_ble_gatts_cb_param_t *param)
 void Characteristic::DefaultReadCallback(Characteristic* ch, esp_ble_gatts_cb_param_t *param)
 {
     void* data = ch->getData();
-    size_t size = ch->getDataSize();
-    if(!data || !size)
-        return;
-
+    size_t size;
+    if(!data)
+        size = 0;
+    else
+    {    
+        size = ch->getDataSize();
+        size = size > MAX_MTU ? MAX_MTU : size;
+    }
     esp_gatt_rsp_t rsp;
     rsp.handle = ch->getHandler();
     rsp.attr_value.len = size;
