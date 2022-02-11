@@ -40,26 +40,20 @@ class Characteristic
         size_t DataSize;
         
         static void DefaultReadCallback(Characteristic*, esp_ble_gatts_cb_param_t*);
-        BLEcallbackType* ReadHandler = &DefaultReadCallback;
+        GATTScallbackType* ReadHandler = &DefaultReadCallback;
         static void DefaultWriteCallback(Characteristic*, esp_ble_gatts_cb_param_t*);
-        BLEcallbackType* WriteHandler = &DefaultWriteCallback;
+        GATTScallbackType* WriteHandler = &DefaultWriteCallback;
 
     public:
         void ConsoleInfoOut(); 
 
         /* SETters */
-        void setReadhandler(BLEcallbackType* callback) { this->ReadHandler = callback; }
-        void setWritehandler(BLEcallbackType* callback) { this->WriteHandler = callback; }
+        void setReadCallback(GATTScallbackType* callback) { this->ReadHandler = callback; }
+        void setWriteCallback(GATTScallbackType* callback) { this->WriteHandler = callback; }void setData(const byte* Data, size_t DataSize);
         void setHandler(uint16_t Handler) { this->Handler = Handler; }
         void setGATTinterface(esp_gatt_if_t GATTinterface) { this->GATTinterface = GATTinterface; }
-        void setPermition(esp_gatt_perm_t Permition) { this->Permition = Permition; }
-        void setProperty(esp_gatt_char_prop_t Property) {this->Property = Property; }
         void setData(const byte* Data, size_t DataSize);
         void setDynamicData(void* Data, size_t DataSize);
-
-        /* GETters */
-        esp_gatt_if_t getGATTinterface() { return this->GATTinterface; }
-        uint16_t getHandler() { return this->Handler; }
         void* getData() { return this->Data; }
         size_t getDataSize() { return this->DataSize; }
 
@@ -69,7 +63,8 @@ class Characteristic
 
         esp_err_t AttachToService(uint16_t ServiceHandler);
 
-        void Notify(const byte* Data, size_t Data_Length, uint16_t connected_device_id = 0);
+        void Notify(const byte* Data, size_t DataSize, uint16_t connected_device_id = 0);
+        void Responce(const void* Data, size_t DataSize, esp_ble_gatts_cb_param_t* Param);
 
         Characteristic(uint32_t _UUID, esp_gatt_perm_t, esp_gatt_char_prop_t);
         Characteristic(uint8_t _UUID[ESP_UUID_LEN_128], esp_gatt_perm_t, esp_gatt_char_prop_t);

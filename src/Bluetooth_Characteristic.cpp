@@ -26,11 +26,16 @@ Characteristic::Characteristic(uint8_t _UUID[ESP_UUID_LEN_128], esp_gatt_perm_t 
     this->Property = Property;
 }
 
+/**
+ * @brief Create association with Service
+*/
 esp_err_t Characteristic::AttachToService(uint16_t ServiceHandler)
 {
     esp_err_t ret;
     ret = esp_ble_gatts_add_char(ServiceHandler, &UUID, Permition, Property, &Char_Data, NULL);
-    if((this->Property & ESP_GATT_CHAR_PROP_BIT_NOTIFY) == ESP_GATT_CHAR_PROP_BIT_NOTIFY)
+    
+    //  Add descriptor for notifications
+    if(this->Property & ESP_GATT_CHAR_PROP_BIT_NOTIFY)
     {
         esp_bt_uuid_t DESCR_DATA_UUID;
             DESCR_DATA_UUID.len = ESP_UUID_LEN_16;
@@ -57,16 +62,19 @@ void Characteristic::ConsoleInfoOut()
 }
 #endif
 
-void Characteristic::callReadHandler(esp_ble_gatts_cb_param_t *param)
+void Characteristic::callReadCallback(esp_ble_gatts_cb_param_t *param)
 {
     this->ReadHandler(this, param);
 }
 
-void Characteristic::callWriteHandler(esp_ble_gatts_cb_param_t *param)
+void Characteristic::callWriteCallback(esp_ble_gatts_cb_param_t *param)
 {
     this->WriteHandler(this, param);
 }
 
+/**
+ * @brief Responce with Characteristic::Data
+*/
 void Characteristic::DefaultReadCallback(Characteristic* ch, esp_ble_gatts_cb_param_t *param)
 {
     void* data = ch->getData();
@@ -81,6 +89,9 @@ void Characteristic::DefaultReadCallback(Characteristic* ch, esp_ble_gatts_cb_pa
     ch->Responce(data, size, param);
 }
 
+/**
+ * @brief Copy input to Characteristic::Data
+*/
 void Characteristic::DefaultWriteCallback(Characteristic* ch, esp_ble_gatts_cb_param_t *param)
 {
     ch->setData(param->write.value, param->write.len);
@@ -102,10 +113,9 @@ void Characteristic::Responce(const void* Data, size_t DataSize, esp_ble_gatts_c
 
 /**
  * @brief Notify client with data array
- * 
  * @param Data Byte array
- * @param Data_Length Number of elements in the array
- * @param connected_device_id ID of connection
+ * @param DataSize Number of elements in the array
+ * @param ConnectedDeviceID ID of connection
  */ 
 void Characteristic::Notify(const byte* Data, size_t DataSize, uint16_t ConnectedDeviceID)
 {
@@ -114,14 +124,13 @@ void Characteristic::Notify(const byte* Data, size_t DataSize, uint16_t Connecte
 }
 
 /**
- * @brief Set Inner Characteristic Data 
+ * @brief Set Inner Characteristic Data by copying. Overwrites old data
  * @param Data Array that will be copied into object's field
  * @param DataSize Size, maximum value - 516
- * 
  */
 void Characteristic::setData(const byte* Data, size_t DataSize)
 {
-    if(this->Data && isAllocatedInside)
+    if(this->Data && DataAllocatedInsideObject)
     {
         byte* DataToClear = (byte*)this->Data;
         delete[] DataToClear;
@@ -131,21 +140,21 @@ void Characteristic::setData(const byte* Data, size_t DataSize)
     this->DataSize = DataSize;
     
     memcpy(this->Data, Data, this->DataSize);
-    isAllocatedInside = true;
+    DataAllocatedInsideObject = true;
 }
 /**
- * @brief Set Extern Characteristic Data
+ * @brief Set Extern Characteristic Data by reference
  * @param Data Dyncamic data allocated outside of class, DO NOT delete if characterisitc will refer it
  * @param DataSize Size, has no maximum value
 */
 void Characteristic::setDynamicData(void* Data, size_t DataSize)
 {
-    if(this->Data && isAllocatedInside)
+    if(this->Data && DataAllocatedInsideObject)
     {
         byte* DataToClear = (byte*)this->Data;
         delete[] DataToClear;
     }
     this->Data = Data;
     this->DataSize = DataSize;
-    isAllocatedInside = false;
+    DataAllocatedInsideObject = false;
 }
