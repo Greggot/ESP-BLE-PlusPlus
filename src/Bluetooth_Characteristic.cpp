@@ -78,16 +78,26 @@ void Characteristic::DefaultReadCallback(Characteristic* ch, esp_ble_gatts_cb_pa
         size = ch->getDataSize();
         size = size > MAX_MTU ? MAX_MTU : size;
     }
-    esp_gatt_rsp_t rsp;
-    rsp.handle = ch->getHandler();
-    rsp.attr_value.len = size;
-    memcpy(rsp.attr_value.value, data, size);
-    esp_ble_gatts_send_response(ch->getGATTinterface(), param->read.conn_id, param->read.trans_id, ESP_GATT_OK, &rsp);
+    ch->Responce(data, size, param);
 }
 
 void Characteristic::DefaultWriteCallback(Characteristic* ch, esp_ble_gatts_cb_param_t *param)
 {
     ch->setData(param->write.value, param->write.len);
+}
+
+/**
+ * @brief Answer to read request
+*/
+void Characteristic::Responce(const void* Data, size_t DataSize, esp_ble_gatts_cb_param_t* Param)
+{
+    static esp_gatt_rsp_t rsp;
+    
+    rsp.handle = Handler;
+    rsp.attr_value.len = DataSize;
+    memcpy(rsp.attr_value.value, Data, DataSize);
+
+    esp_ble_gatts_send_response(GATTinterface, Param->read.conn_id, Param->read.trans_id, ESP_GATT_OK, &rsp);
 }
 
 /**
