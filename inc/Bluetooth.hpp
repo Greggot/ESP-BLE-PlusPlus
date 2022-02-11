@@ -111,44 +111,28 @@ class Service
 class ServerDevice
 {
     private:
-        typedef void BLEcallbackType(ServerDevice*, esp_ble_gatts_cb_param_t*);
+        static const uint8_t MaxEventNumber = 24;
+        typedef void GATTScallbackType(ServerDevice*, esp_ble_gatts_cb_param_t*);
 
+        const char* Name;
         esp_ble_adv_data_t AdvertisingData;
         esp_ble_adv_data_t ScanResponceData;
         esp_ble_adv_params_t AdvertisingParameters;
+        esp_gatt_if_t GATTinterface;
+
+        std::vector<Service*> Services;
         
-        esp_gatt_if_t GATT_Interface;
+        GATTScallbackType* DeviceCallbacks[MaxEventNumber] {NULL};
+        void HandleGATTSevents(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param);
 
-        std::vector<Service*> SERVICE;
-            std::map <uint16_t, Characteristic*> AllCharacteristics;
-            std::map <uint16_t, Service*> AllServices;
-
-        std::vector<int> AmountOfChars;
-        uint16_t ServiceInitializeCounter = 0;
-        uint16_t CharacteristicInitializeCount = 0;
-        uint16_t CharacteristicInitializeCountMax;
-        const char* Name;
-
-        void DeviceCallback(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param);
-        BLEcallbackType* GATTeventsCallbacks[24];
-        std::vector<uint32_t>callbackIndexes;
+        void Start(esp_gatt_if_t GATTinterface);
     public:
         ServerDevice();
-        ServerDevice(const char* Name);
         ServerDevice(const char* Name, esp_ble_adv_data_t AdvertisingData, esp_ble_adv_data_t ScanResponceData, 
-                    esp_ble_adv_params_t AdvertisingParameters, std::vector<Service*> SERVICE);
+                    esp_ble_adv_params_t AdvertisingParameters, std::vector<Service*> Services);
 
-        /*      GETters     */
-        std::vector<Service*> getServices() { return this->SERVICE; }
-        esp_gatt_if_t getGATTinterface() { return GATT_Interface; }
-
-        /*      SETters     */
-        void setAdvertisingData(esp_ble_adv_data_t, esp_ble_adv_data_t, esp_ble_adv_params_t);
-        void setDeviceGATTeventCallback(esp_gatts_cb_event_t Event, BLEcallbackType* Callback);
-
+        void setGATTSevent(esp_gatts_cb_event_t Event, GATTScallbackType* Callback);
+        
         void HandleEvent(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t* param) 
-            { DeviceCallback(event, gatts_if, param); }
-
-        void Start(esp_gatt_if_t GATT_Interface);
-        void AddService(Service* service) { SERVICE.push_back(service); }
+            { HandleGATTSevents(event, gatts_if, param); }
 };
