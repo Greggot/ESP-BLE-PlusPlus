@@ -1,7 +1,7 @@
 #include <Bluetooth.hpp>
 #include <cstring>
 
-#define MAX_MTU 22
+#define MAX_MTU 512
 
 Characteristic::Characteristic(uint32_t _UUID, esp_gatt_perm_t Permition, esp_gatt_char_prop_t Property)
 {
@@ -48,19 +48,6 @@ esp_err_t Characteristic::AttachToService(uint16_t ServiceHandler)
     }
     return ret;
 }
-
-#ifdef BLE_CHARACTERISTICS_PRINTF
-void Characteristic::ConsoleInfoOut()
-{
-    printf("UUID: ");
-    if(this->UUID.len == ESP_UUID_LEN_16)
-        printf("%04X, ", this->UUID.uuid.uuid16);
-    else if(this->UUID.len == ESP_UUID_LEN_32)
-        printf("%08X, ", this->UUID.uuid.uuid32);
-
-    printf("Handler: %d\n", this->Handler);
-}
-#endif
 
 void Characteristic::callReadCallback(esp_ble_gatts_cb_param_t *param)
 {

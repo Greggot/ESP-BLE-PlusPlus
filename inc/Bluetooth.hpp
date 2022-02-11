@@ -19,23 +19,44 @@
 
 typedef __uint8_t byte;
 
-class Characteristic
+class GATTinstance
+{
+    protected:
+        esp_bt_uuid_t UUID;
+        esp_gatt_if_t GATTinterface;
+        uint16_t Handler;
+    public:
+        #if defined BLE_SERVICES_PRINTF || defined BLE_CHARACTERISTICS_PRINTF
+        void ConsoleInfoOut()
+        {
+            printf("UUID: ");
+            if(this->UUID.len == ESP_UUID_LEN_16)
+                printf("%04X, ", this->UUID.uuid.uuid16);
+            else if(this->UUID.len == ESP_UUID_LEN_32)
+                printf("%08X, ", this->UUID.uuid.uuid32);
+
+            printf("Handler: %d\n", this->Handler);
+        }
+        #endif
+        
+        uint16_t getHandler() { return this->Handler; }
+        void setHandler(uint16_t Handler) { this->Handler = Handler; }
+        
+        esp_gatt_if_t getGATTinterface() { return this->GATTinterface; }
+        void setGATTinterface(esp_gatt_if_t GATTinterface) { this->GATTinterface = GATTinterface; }
+
+};
+
+class Characteristic : public GATTinstance
 {
     private:
-        typedef void BLEcallbackType(Characteristic*, esp_ble_gatts_cb_param_t*);
+        typedef void GATTScallbackType(Characteristic*, esp_ble_gatts_cb_param_t*);
 
-        esp_bt_uuid_t UUID;
         esp_attr_value_t  Char_Data;
-
         esp_gatt_perm_t Permition;
         esp_gatt_char_prop_t Property;
 
-        esp_attr_control_t Control;
-
-        uint16_t Handler;
-        esp_gatt_if_t GATTinterface;
-
-        bool isAllocatedInside = false;
+        bool DataAllocatedInsideObject = false;
         void* Data;
         size_t DataSize;
         
@@ -45,21 +66,15 @@ class Characteristic
         GATTScallbackType* WriteHandler = &DefaultWriteCallback;
 
     public:
-        void ConsoleInfoOut(); 
-
-        /* SETters */
         void setReadCallback(GATTScallbackType* callback) { this->ReadHandler = callback; }
-        void setWriteCallback(GATTScallbackType* callback) { this->WriteHandler = callback; }void setData(const byte* Data, size_t DataSize);
-        void setHandler(uint16_t Handler) { this->Handler = Handler; }
-        void setGATTinterface(esp_gatt_if_t GATTinterface) { this->GATTinterface = GATTinterface; }
+        void setWriteCallback(GATTScallbackType* callback) { this->WriteHandler = callback; }
+        void callReadCallback(esp_ble_gatts_cb_param_t *param);
+        void callWriteCallback(esp_ble_gatts_cb_param_t *param);
+
         void setData(const byte* Data, size_t DataSize);
         void setDynamicData(void* Data, size_t DataSize);
         void* getData() { return this->Data; }
         size_t getDataSize() { return this->DataSize; }
-
-        /* CALLers */
-        void callReadHandler(esp_ble_gatts_cb_param_t *param);
-        void callWriteHandler(esp_ble_gatts_cb_param_t *param);
 
         esp_err_t AttachToService(uint16_t ServiceHandler);
 
@@ -70,37 +85,26 @@ class Characteristic
         Characteristic(uint8_t _UUID[ESP_UUID_LEN_128], esp_gatt_perm_t, esp_gatt_char_prop_t);
 };
 
-class Service
+class Service : public GATTinstance
 {
     private:
-        esp_bt_uuid_t UUID;
-        void UUID_Init(uint32_t _UUID);
-    
-        esp_gatt_if_t GATTinterface;
         esp_gatt_srvc_id_t service_id;
+        
         uint16_t num_handle;
-        uint16_t Handler;
         std::vector<Characteristic*> Characteristics;
-        //Characteristic** Characteristics;
         size_t CharacteristicsSize;
     public:
-        //std::map <uint16_t, Characteristic*> Chars;
         uint16_t CharCounter = 0;
 
-        void ConsoleInfoOut();
-        /* SETters */
-        void setHandler(uint16_t Handler) { this->Handler = Handler; }
         void setGATTinterface(esp_gatt_if_t GATTinterface);
-        /* GETters */
+
         std::vector<Characteristic*> getCharacteristics() { return this->Characteristics; }
         size_t getCharacteristicsSize() { return this->CharacteristicsSize; }
-        uint16_t getHandler() { return this->Handler; }
 
         Service(uint32_t _UUID, std::vector<Characteristic*> Characteristics);
 
         void Start();
         void Create();
-        void CharacteristicInitialization();
 };
 
 class ServerDevice
