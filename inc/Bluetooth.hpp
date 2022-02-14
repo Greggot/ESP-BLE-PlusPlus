@@ -78,7 +78,7 @@ class Characteristic : public GATTinstance
 
         esp_err_t AttachToService(uint16_t ServiceHandler);
 
-        void Notify(const byte* Data, size_t DataSize, uint16_t connected_device_id = 0);
+        void Notify(const void* Data, size_t DataSize, uint16_t connected_device_id = 0);
         void Responce(const void* Data, size_t DataSize, esp_ble_gatts_cb_param_t* Param);
 
         Characteristic(uint32_t _UUID, esp_gatt_perm_t, esp_gatt_char_prop_t);

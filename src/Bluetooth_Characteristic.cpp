@@ -104,7 +104,7 @@ void Characteristic::Responce(const void* Data, size_t DataSize, esp_ble_gatts_c
  * @param DataSize Number of elements in the array
  * @param ConnectedDeviceID ID of connection
  */ 
-void Characteristic::Notify(const byte* Data, size_t DataSize, uint16_t ConnectedDeviceID)
+void Characteristic::Notify(const void* Data, size_t DataSize, uint16_t ConnectedDeviceID)
 {
     if(this->Property & ESP_GATT_CHAR_PROP_BIT_NOTIFY)
         esp_ble_gatts_send_indicate(GATTinterface, ConnectedDeviceID, Handler, DataSize, (byte*)Data, false);
