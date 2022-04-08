@@ -115,7 +115,7 @@ void Characteristic::Notify(const void* Data, size_t DataSize, uint16_t Connecte
  * @param Data Array that will be copied into object's field
  * @param DataSize Size, maximum value - 516
  */
-void Characteristic::setData(const byte* Data, size_t DataSize)
+void Characteristic::setData(const void* Data, size_t DataSize)
 {
     if(this->Data && DataAllocatedInsideObject)
     {

@@ -102,7 +102,7 @@ class Characteristic : public GATTinstance
         void callReadCallback(esp_ble_gatts_cb_param_t *param);
         void callWriteCallback(esp_ble_gatts_cb_param_t *param);
 
-        void setData(const byte* Data, size_t DataSize);
+        void setData(const void* Data, size_t DataSize);
         void setDynamicData(void* Data, size_t DataSize);
         void* getData() { return this->Data; }
         size_t getDataSize() { return this->DataSize; }
