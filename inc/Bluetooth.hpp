@@ -61,12 +61,9 @@ class GATTinstance
         void ConsoleInfoOut()
         {
             printf("UUID: ");
-            if(this->UUID.len == ESP_UUID_LEN_16)
-                printf("%04X, ", this->UUID.uuid.uuid16);
-            else if(this->UUID.len == ESP_UUID_LEN_32)
-                printf("%08X, ", this->UUID.uuid.uuid32);
-
-            printf("Handler: %d\n", this->Handler);
+            for(uint8_t i = 0; i < UUID.len; ++i)
+                printf("%02X", UUID.uuid.uuid128[i]);
+            printf(", Handler: %d\n", this->Handler);
         }
         #endif
         
