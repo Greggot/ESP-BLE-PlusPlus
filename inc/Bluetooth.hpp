@@ -50,11 +50,12 @@ namespace Prop
     };
 }
 
+extern esp_gatt_if_t GATTinterface;
+
 class GATTinstance
 {
     protected:
         esp_bt_uuid_t UUID;
-        esp_gatt_if_t GATTinterface;
         uint16_t Handler;
     public:
         #if defined BLE_SERVICES_PRINTF || defined BLE_CHARACTERISTICS_PRINTF
@@ -69,10 +70,6 @@ class GATTinstance
         
         uint16_t getHandler() { return this->Handler; }
         void setHandler(uint16_t Handler) { this->Handler = Handler; }
-        
-        esp_gatt_if_t getGATTinterface() { return this->GATTinterface; }
-        void setGATTinterface(esp_gatt_if_t GATTinterface) { this->GATTinterface = GATTinterface; }
-
 };
 
 class Characteristic : public GATTinstance
@@ -124,8 +121,6 @@ class Service : public GATTinstance
     public:
         uint16_t CharCounter = 0;
 
-        void setGATTinterface(esp_gatt_if_t GATTinterface);
-
         std::vector<Characteristic*> getCharacteristics() { return this->Characteristics; }
         size_t getCharacteristicsSize() { return this->CharacteristicsSize; }
 
@@ -145,14 +140,13 @@ class ServerDevice
         static esp_ble_adv_data_t AdvertisingData;
         static esp_ble_adv_data_t ScanResponceData;
         static esp_ble_adv_params_t AdvertisingParameters;
-        esp_gatt_if_t GATTinterface;
 
         std::vector<Service*> Services;
         
         GATTScallbackType* DeviceCallbacks[MaxEventNumber] {NULL};
         void HandleGATTSevents(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param);
 
-        void Start(esp_gatt_if_t GATTinterface);
+        void Start();
     public:
         ServerDevice();
         ServerDevice(const char* Name, std::initializer_list<Service*> Services);

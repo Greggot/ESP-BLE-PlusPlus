@@ -17,22 +17,12 @@ Service::Service(uint32_t _UUID, std::vector<Characteristic*> Characteristics)
 void Service::Create()
 {
     this->num_handle = 4 + (CharacteristicsSize << 1);
-    esp_ble_gatts_create_service(this->GATTinterface, &service_id, num_handle);
+    esp_ble_gatts_create_service(GATTinterface, &service_id, num_handle);
 }
 
 void Service::Start()
 {
-    esp_ble_gatts_start_service(this->Handler);
+    esp_ble_gatts_start_service(Handler);
     for(size_t i = 0; i < CharacteristicsSize; i++)
-    {
-        Characteristics[i]->AttachToService(this->Handler);
-        Characteristics[i]->setGATTinterface(this->GATTinterface);
-    }
-}
-
-void Service::setGATTinterface(esp_gatt_if_t GATTinterface)
-{ 
-    this->GATTinterface = GATTinterface; 
-    for(size_t i = 0; i < CharacteristicsSize; i++)
-        Characteristics[i]->setGATTinterface(GATTinterface);
+        Characteristics[i]->AttachToService(Handler);
 }

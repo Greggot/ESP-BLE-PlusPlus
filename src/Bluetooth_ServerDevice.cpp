@@ -3,6 +3,7 @@
 
 ServerDevice::ServerDevice() {}
 
+esp_gatt_if_t GATTinterface = 0;
 const char* ServerDevice::Name = "None";
 esp_ble_adv_data_t ServerDevice::AdvertisingData = {
     .set_scan_rsp = false,
@@ -66,19 +67,14 @@ ServerDevice::ServerDevice(const char* Name, std::initializer_list<Service*> Ser
 /**
  * @brief Set device name, GATT interface, advertising data
  */ 
-void ServerDevice::Start(esp_gatt_if_t GATTinterface)
+void ServerDevice::Start()
 {
-    this->GATTinterface = GATTinterface;
-
     esp_ble_gap_set_device_name(Name);
     esp_ble_gap_config_adv_data(&AdvertisingData);
     esp_ble_gap_config_adv_data(&ScanResponceData);
 
-    for(Service* srv : Services)
-    {
-        srv->setGATTinterface(GATTinterface);
+    for(auto srv : Services)
         srv->Create();
-    }
 }
 
 void ServerDevice::HandleGATTSevents(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param)
@@ -98,7 +94,8 @@ void ServerDevice::HandleGATTSevents(esp_gatts_cb_event_t event, esp_gatt_if_t g
     switch (event) 
     {
     case ESP_GATTS_REG_EVT:
-        this->Start(gatts_if);
+        GATTinterface = gatts_if;
+        Start();
         break;
     case ESP_GATTS_READ_EVT:
         AllCharacteristics[param->read.handle]->callReadCallback(param);   
