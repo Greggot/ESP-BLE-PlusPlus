@@ -59,6 +59,16 @@ class GATTinstance
         esp_bt_uuid_t UUID;
         uint16_t Handler;
     public:
+        GATTinstance(uint32_t ID)
+        {
+            UUID.len = ID & 0xFFFF0000 ? sizeof(uint32_t) : sizeof(uint16_t);
+            memcpy(&UUID.uuid, &ID, UUID.len);
+        }
+        GATTinstance(uint8_t ID[ESP_UUID_LEN_128])
+        {
+            UUID.len = ESP_UUID_LEN_128;
+            memcpy(&UUID.uuid, ID, UUID.len);
+        }
         #if defined BLE_SERVICES_PRINTF || defined BLE_CHARACTERISTICS_PRINTF
         void ConsoleInfoOut()
         {
@@ -79,12 +89,12 @@ class Characteristic : public GATTinstance
         typedef void GATTScallbackType(Characteristic*, esp_ble_gatts_cb_param_t*);
 
         esp_attr_value_t  Char_Data;
-        esp_gatt_perm_t Permition;
-        esp_gatt_char_prop_t Property;
+        const esp_gatt_perm_t Permition;
+        const esp_gatt_char_prop_t Property;
 
         bool DataAllocatedInsideObject = false;
-        void* Data;
-        size_t DataSize;
+        void* Data = nullptr;
+        size_t DataSize = 0;
         
         static void DefaultReadCallback(Characteristic*, esp_ble_gatts_cb_param_t*);
         GATTScallbackType* ReadHandler = &DefaultReadCallback;
@@ -116,16 +126,15 @@ class Service : public GATTinstance
     private:
         esp_gatt_srvc_id_t service_id;
         
-        uint16_t num_handle;
-        std::vector<Characteristic*> Characteristics;
-        size_t CharacteristicsSize;
+        const std::vector<Characteristic*> Characteristics;
+        const size_t CharacteristicsSize;
     public:
         uint16_t CharCounter = 0;
 
-        std::vector<Characteristic*> getCharacteristics() { return this->Characteristics; }
-        size_t getCharacteristicsSize() { return this->CharacteristicsSize; }
+        const std::vector<Characteristic*> getCharacteristics() const { return Characteristics; }
+        size_t getCharacteristicsSize() const { return CharacteristicsSize; }
 
-        Service(uint32_t _UUID, std::vector<Characteristic*> Characteristics);
+        Service(const uint32_t UUID, const std::vector<Characteristic*> Characteristics);
 
         void Start();
         void Create();
