@@ -33,8 +33,8 @@ esp_ble_adv_data_t ServerDevice::ScanResponceData = {
     //.min_interval = 0x0006,
     //.max_interval = 0x0010,
     .appearance = 0x00,
-    .manufacturer_len = 0, //TEST_MANUFACTURER_DATA_LEN,
-    .p_manufacturer_data =  NULL, //&test_manufacturer[0],
+    .manufacturer_len = 0, 
+    .p_manufacturer_data =  NULL,
     .service_data_len = 0,
     .p_service_data = NULL,
     .service_uuid_len = sizeof(adv_service_uuid128),
@@ -53,6 +53,30 @@ esp_ble_adv_params_t ServerDevice::AdvertisingParameters = {
     .adv_filter_policy = ADV_FILTER_ALLOW_SCAN_ANY_CON_ANY,
 };
 
+static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
+{
+    switch (event) {
+    case ESP_GAP_BLE_ADV_DATA_SET_COMPLETE_EVT:
+    case ESP_GAP_BLE_SCAN_RSP_DATA_SET_COMPLETE_EVT:
+            esp_ble_gap_start_advertising(&ServerDevice::AdvertisingParameters);
+        break;
+    case ESP_GAP_BLE_UPDATE_CONN_PARAMS_EVT:
+        printf("\tUpdate connection params status = %d, min_int = %d, max_int = %d,conn_int = %d,latency = %d, timeout = %d\n",
+                  param->update_conn_params.status,
+                  param->update_conn_params.min_int,
+                  param->update_conn_params.max_int,
+                  param->update_conn_params.conn_int,
+                  param->update_conn_params.latency,
+                  param->update_conn_params.timeout);
+        break;
+    default:
+        break;
+    }
+}
+
+std::vector<Service*> ServerDevice::Services;
+GATTScallbackType* ServerDevice::DeviceCallbacks[MaxEventNumber] = {NULL};
+
 ServerDevice::ServerDevice(const char* Name, std::initializer_list<Service*> ServiceList)
 {
     this->Name = Name;
@@ -67,6 +91,10 @@ ServerDevice::ServerDevice(const char* Name, std::initializer_list<Service*> Ser
     esp_bt_controller_enable(ESP_BT_MODE_BLE);
     esp_bluedroid_init();
     esp_bluedroid_enable();
+
+    esp_ble_gatts_register_callback(ServerDevice::HandleGATTSevents);  
+    esp_ble_gap_register_callback(gap_event_handler);
+    esp_ble_gatts_app_register(0);
 }
 
 /**
