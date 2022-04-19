@@ -3,30 +3,65 @@
 
 ServerDevice::ServerDevice() {}
 
-ServerDevice::ServerDevice(const char* Name, esp_ble_adv_data_t AdvertisingData, esp_ble_adv_data_t ScanResponceData,
-                            esp_ble_adv_params_t AdvertisingParameters, std::vector<Service*> Services)
+const char* ServerDevice::Name = "None";
+esp_ble_adv_data_t ServerDevice::AdvertisingData = {
+    .set_scan_rsp = false,
+    .include_name = true,
+    .include_txpower = false,
+    .min_interval = 0x0006, //slave connection min interval, Time = min_interval * 1.25 msec
+    .max_interval = 0x0010, //slave connection max interval, Time = max_interval * 1.25 msec
+    .appearance = 0x00,
+    .manufacturer_len = 0, //TEST_MANUFACTURER_DATA_LEN,
+    .p_manufacturer_data =  NULL, //&test_manufacturer[0],
+    .service_data_len = 0,
+    .p_service_data = NULL,
+    .service_uuid_len = sizeof(adv_service_uuid128),
+    .p_service_uuid = adv_service_uuid128,
+    .flag = (ESP_BLE_ADV_FLAG_GEN_DISC | ESP_BLE_ADV_FLAG_BREDR_NOT_SPT),
+};
+
+esp_ble_adv_data_t ServerDevice::ScanResponceData = {
+    .set_scan_rsp = true,
+    .include_name = true,
+    .include_txpower = true,
+    //.min_interval = 0x0006,
+    //.max_interval = 0x0010,
+    .appearance = 0x00,
+    .manufacturer_len = 0, //TEST_MANUFACTURER_DATA_LEN,
+    .p_manufacturer_data =  NULL, //&test_manufacturer[0],
+    .service_data_len = 0,
+    .p_service_data = NULL,
+    .service_uuid_len = sizeof(adv_service_uuid128),
+    .p_service_uuid = adv_service_uuid128,
+    .flag = (ESP_BLE_ADV_FLAG_GEN_DISC | ESP_BLE_ADV_FLAG_BREDR_NOT_SPT),
+};
+
+esp_ble_adv_params_t ServerDevice::AdvertisingParameters = {
+    .adv_int_min        = 0x20,
+    .adv_int_max        = 0x40,
+    .adv_type           = ADV_TYPE_IND,
+    .own_addr_type      = BLE_ADDR_TYPE_PUBLIC,
+    //.peer_addr            =
+    //.peer_addr_type       =
+    .channel_map        = ADV_CHNL_ALL,
+    .adv_filter_policy = ADV_FILTER_ALLOW_SCAN_ANY_CON_ANY,
+};
+
+
+ServerDevice::ServerDevice(const char* Name, std::vector<Service*> Services)
 {
     this->Name = Name;
-    this->AdvertisingData = AdvertisingData;
-    this->ScanResponceData = ScanResponceData;
-    this->AdvertisingParameters = AdvertisingParameters;
 
     this->Services = Services;
 
     ESP_ERROR_CHECK(esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT));
 
     esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
-    if(esp_bt_controller_init(&bt_cfg) == ESP_OK)
-        printf("Controller Initialized\n");
-
-    if(esp_bt_controller_enable(ESP_BT_MODE_BLE) == ESP_OK)
-        printf("Controller Enabled\n");
     
-    if(esp_bluedroid_init() == ESP_OK)
-        printf("Bluedroid Initialized\n");
-    
-    if(esp_bluedroid_enable() == ESP_OK)
-        printf("Bluedroid Enabled\n");
+    esp_bt_controller_init(&bt_cfg);
+    esp_bt_controller_enable(ESP_BT_MODE_BLE);
+    esp_bluedroid_init();
+    esp_bluedroid_enable();
 }
 
 /**

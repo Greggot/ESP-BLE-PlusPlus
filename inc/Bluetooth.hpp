@@ -141,10 +141,10 @@ class ServerDevice
         static const uint8_t MaxEventNumber = 24;
         typedef void GATTScallbackType(ServerDevice*, esp_ble_gatts_cb_param_t*);
 
-        const char* Name;
-        esp_ble_adv_data_t AdvertisingData;
-        esp_ble_adv_data_t ScanResponceData;
-        esp_ble_adv_params_t AdvertisingParameters;
+        static const char* Name;
+        static esp_ble_adv_data_t AdvertisingData;
+        static esp_ble_adv_data_t ScanResponceData;
+        static esp_ble_adv_params_t AdvertisingParameters;
         esp_gatt_if_t GATTinterface;
 
         std::vector<Service*> Services;
@@ -155,8 +155,7 @@ class ServerDevice
         void Start(esp_gatt_if_t GATTinterface);
     public:
         ServerDevice();
-        ServerDevice(const char* Name, esp_ble_adv_data_t AdvertisingData, esp_ble_adv_data_t ScanResponceData, 
-                    esp_ble_adv_params_t AdvertisingParameters, std::vector<Service*> Services);
+        ServerDevice(const char* Name, std::vector<Service*> Services);
 
         void setGATTSevent(esp_gatts_cb_event_t Event, GATTScallbackType* Callback);
         
