@@ -93,7 +93,7 @@ class Characteristic : public GATTinstance
         typedef void (*WriteCallback)(Characteristic*, const uint16_t, const void*);
         typedef void (*ReadCallback)(const Characteristic*, esp_ble_gatts_cb_param_t *param);
     
-        esp_attr_value_t  Char_Data;
+        esp_attr_value_t  CharData;
         const esp_gatt_perm_t Permition;
         const esp_gatt_char_prop_t Property;
 
@@ -114,20 +114,18 @@ class Characteristic : public GATTinstance
         
         void setReadCallback(ReadCallback call) { ReadHandler = call; }
         void setWriteCallback(WriteCallback call) { WriteHandler = call; }
-        
         void callReadCallback(esp_ble_gatts_cb_param_t *param);
         void callWriteCallback(esp_ble_gatts_cb_param_t *param);
 
         void setData(const void* Data, size_t DataSize);
         void setDynamicData(void* Data, size_t DataSize);
-        void* getData() const { return this->Data; }
-        size_t getDataSize() const { return this->DataSize; }
-
-        esp_err_t AttachToService(uint16_t ServiceHandler);
+        void* getData() const { return Data; }
+        size_t getDataSize() const { return DataSize; }
 
         void Notify(const void* Data, size_t DataSize, uint16_t connected_device_id = 0) const;
         void Responce(const void* Data, size_t DataSize, esp_ble_gatts_cb_param_t* Param) const;
 
+        void AttachToService(uint16_t ServiceHandler);
         static void setMTU(uint16_t);
 
         ~Characteristic();
