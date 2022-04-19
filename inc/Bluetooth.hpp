@@ -79,15 +79,16 @@ class GATTinstance
         }
         #endif
         
-        uint16_t getHandler() { return this->Handler; }
+        uint16_t getHandler() { return Handler; }
         void setHandler(uint16_t Handler) { this->Handler = Handler; }
 };
 
 class Characteristic : public GATTinstance
 {
     private:
-        typedef void GATTScallbackType(Characteristic*, esp_ble_gatts_cb_param_t*);
-
+        typedef void (*WriteCallback)(Characteristic*, const uint16_t, const void*);
+        typedef void (*ReadCallback)(const Characteristic*, esp_ble_gatts_cb_param_t *param);
+    
         esp_attr_value_t  Char_Data;
         const esp_gatt_perm_t Permition;
         const esp_gatt_char_prop_t Property;
@@ -96,26 +97,29 @@ class Characteristic : public GATTinstance
         void* Data = nullptr;
         size_t DataSize = 0;
         
-        static void DefaultReadCallback(Characteristic*, esp_ble_gatts_cb_param_t*);
-        GATTScallbackType* ReadHandler = &DefaultReadCallback;
-        static void DefaultWriteCallback(Characteristic*, esp_ble_gatts_cb_param_t*);
-        GATTScallbackType* WriteHandler = &DefaultWriteCallback;
+        ReadCallback ReadHandler = [](const Characteristic* ch, esp_ble_gatts_cb_param_t *param){
+            ch->Responce(ch->getData(), ch->getDataSize(), param);
+        };
+        WriteCallback WriteHandler = [](Characteristic* ch, const uint16_t len, const void* value){
+            ch->setData(value, len);
+        };
 
     public:
-        void setReadCallback(GATTScallbackType* callback) { this->ReadHandler = callback; }
-        void setWriteCallback(GATTScallbackType* callback) { this->WriteHandler = callback; }
+        void setReadCallback(ReadCallback call) { ReadHandler = call; }
+        void setWriteCallback(WriteCallback call) { WriteHandler = call; }
+        
         void callReadCallback(esp_ble_gatts_cb_param_t *param);
         void callWriteCallback(esp_ble_gatts_cb_param_t *param);
 
         void setData(const void* Data, size_t DataSize);
         void setDynamicData(void* Data, size_t DataSize);
-        void* getData() { return this->Data; }
-        size_t getDataSize() { return this->DataSize; }
+        void* getData() const { return this->Data; }
+        size_t getDataSize() const { return this->DataSize; }
 
         esp_err_t AttachToService(uint16_t ServiceHandler);
 
-        void Notify(const void* Data, size_t DataSize, uint16_t connected_device_id = 0);
-        void Responce(const void* Data, size_t DataSize, esp_ble_gatts_cb_param_t* Param);
+        void Notify(const void* Data, size_t DataSize, uint16_t connected_device_id = 0) const;
+        void Responce(const void* Data, size_t DataSize, esp_ble_gatts_cb_param_t* Param) const;
 
         Characteristic(uint32_t _UUID, esp_gatt_perm_t, esp_gatt_char_prop_t);
         Characteristic(uint8_t _UUID[ESP_UUID_LEN_128], esp_gatt_perm_t, esp_gatt_char_prop_t);

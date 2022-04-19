@@ -41,38 +41,14 @@ void Characteristic::callReadCallback(esp_ble_gatts_cb_param_t *param)
 
 void Characteristic::callWriteCallback(esp_ble_gatts_cb_param_t *param)
 {
-    WriteHandler(this, param);
+    WriteHandler(this, param->write.len, param->write.value);
 }
 
-/**
- * @brief Responce with Characteristic::Data
-*/
-void Characteristic::DefaultReadCallback(Characteristic* ch, esp_ble_gatts_cb_param_t *param)
-{
-    void* data = ch->getData();
-    size_t size;
-    if(!data)
-        size = 0;
-    else
-    {    
-        size = ch->getDataSize();
-        size = size > MAX_MTU ? MAX_MTU : size;
-    }
-    ch->Responce(data, size, param);
-}
-
-/**
- * @brief Copy input to Characteristic::Data
-*/
-void Characteristic::DefaultWriteCallback(Characteristic* ch, esp_ble_gatts_cb_param_t *param)
-{
-    ch->setData(param->write.value, param->write.len);
-}
 
 /**
  * @brief Answer to read request
 */
-void Characteristic::Responce(const void* Data, size_t DataSize, esp_ble_gatts_cb_param_t* Param)
+void Characteristic::Responce(const void* Data, size_t DataSize, esp_ble_gatts_cb_param_t* Param) const
 {
     static esp_gatt_rsp_t rsp;
     
@@ -89,9 +65,9 @@ void Characteristic::Responce(const void* Data, size_t DataSize, esp_ble_gatts_c
  * @param DataSize Number of elements in the array
  * @param ConnectedDeviceID ID of connection
  */ 
-void Characteristic::Notify(const void* Data, size_t DataSize, uint16_t ConnectedDeviceID)
+void Characteristic::Notify(const void* Data, size_t DataSize, uint16_t ConnectedDeviceID) const
 {
-    if(this->Property & ESP_GATT_CHAR_PROP_BIT_NOTIFY)
+    if(Property & ESP_GATT_CHAR_PROP_BIT_NOTIFY)
         esp_ble_gatts_send_indicate(GATTinterface, ConnectedDeviceID, Handler, DataSize, (byte*)Data, false);
 }
 
