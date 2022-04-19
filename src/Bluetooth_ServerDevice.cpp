@@ -103,15 +103,16 @@ void ServerDevice::HandleGATTSevents(esp_gatts_cb_event_t event, esp_gatt_if_t g
         Start();
         break;
     case ESP_GATTS_READ_EVT:
-        AllCharacteristics[param->read.handle]->callReadCallback(param);   
+    {
+        if(AllCharacteristics.find(param->write.handle) != AllCharacteristics.end())
+            AllCharacteristics[param->read.handle]->callReadCallback(param);   
         break;
+    }
     case ESP_GATTS_WRITE_EVT:
     { 
         esp_ble_gatts_send_response(gatts_if, param->write.conn_id, param->write.trans_id, ESP_GATT_OK, NULL);
         if(AllCharacteristics.find(param->write.handle) != AllCharacteristics.end())
-        {
             AllCharacteristics[param->write.handle]->callWriteCallback(param);
-        }
 
         #ifdef BLE_INPUT_PRINTF
         if(param->write.len < 40)
@@ -124,11 +125,12 @@ void ServerDevice::HandleGATTSevents(esp_gatts_cb_event_t event, esp_gatt_if_t g
         else
             printf("%d <- %dB (%d)\n", param->write.handle, param->write.len, param->write.trans_id);
         #endif
-    }
         break;
+    }
     case ESP_GATTS_EXEC_WRITE_EVT:
         esp_ble_gatts_send_response(gatts_if, param->write.conn_id, param->write.trans_id, ESP_GATT_OK, NULL);
         break;
+
     case ESP_GATTS_DISCONNECT_EVT:
         printf("Disconnected!\n");
         esp_ble_gap_start_advertising(&AdvertisingParameters);
@@ -136,17 +138,14 @@ void ServerDevice::HandleGATTSevents(esp_gatts_cb_event_t event, esp_gatt_if_t g
 
     case ESP_GATTS_CONNECT_EVT: 
     {   
-        esp_ble_conn_update_params_t conn_params;
-        for(uint8_t i = 0; i < ESP_BD_ADDR_LEN; i++)
-            conn_params.bda[i] = param->connect.remote_bda[i];
-
         // These're the fastest parameters with a speed of 100KB/18s (5.5KB/s)
-        conn_params.latency = 0;
-        conn_params.max_int = 0x10;    // max_int = 0x10*1.25ms = 20ms
-        conn_params.min_int = 6;    // min_int = 6*1.25ms = 7.5ms, Android minimum
-        conn_params.timeout = 400;    // timeout = 400*10ms = 4000ms
+        static const uint16_t MaxInt  = 0x10;
+        static const uint16_t MinInt  = 6;
+        static const uint16_t Timeout = 400; 
+        static esp_ble_conn_update_params_t ConnectionParameters{ {0}, MinInt, MaxInt, 0, Timeout };
         
-        esp_ble_gap_update_conn_params(&conn_params);
+        memcpy(ConnectionParameters.bda, param->connect.remote_bda, ESP_BD_ADDR_LEN);
+        esp_ble_gap_update_conn_params(&ConnectionParameters);
         break;
     }
 
