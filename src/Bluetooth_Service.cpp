@@ -1,5 +1,4 @@
 #include <Bluetooth.hpp>
-#include <cstring>
 
 Service::Service(uint32_t _UUID, std::vector<Characteristic*> Characteristics)
 {

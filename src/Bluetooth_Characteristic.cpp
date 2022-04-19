@@ -1,5 +1,4 @@
 #include <Bluetooth.hpp>
-#include <cstring>
 
 #define MAX_MTU 512
 

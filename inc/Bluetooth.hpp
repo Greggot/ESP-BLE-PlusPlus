@@ -12,6 +12,7 @@
 
 #include <vector>
 #include <map>
+#include <cstring>
 
 #define BLE_SERVICES_PRINTF
 #define BLE_CHARACTERISTICS_PRINTF

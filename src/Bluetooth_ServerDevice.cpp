@@ -1,10 +1,15 @@
 #include <Bluetooth.hpp>
-#include <BluetoothGAP.h>
 
 ServerDevice::ServerDevice() {}
 
 esp_gatt_if_t GATTinterface = 0;
 const char* ServerDevice::Name = "None";
+static uint8_t adv_service_uuid128[] = 
+{
+    0xfb, 0x34, 0x9b, 0x5f, 0x80, 0x00, 0x00, 0x80, 
+    0x00, 0x10, 0x00, 0x00, 0xFF, 0x00, 0x00, 0x00,
+};
+
 esp_ble_adv_data_t ServerDevice::AdvertisingData = {
     .set_scan_rsp = false,
     .include_name = true,
@@ -126,7 +131,7 @@ void ServerDevice::HandleGATTSevents(esp_gatts_cb_event_t event, esp_gatt_if_t g
         break;
     case ESP_GATTS_DISCONNECT_EVT:
         printf("Disconnected!\n");
-        esp_ble_gap_start_advertising(&adv_params);
+        esp_ble_gap_start_advertising(&AdvertisingParameters);
         break;
 
     case ESP_GATTS_CONNECT_EVT: 
