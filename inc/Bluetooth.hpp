@@ -149,6 +149,7 @@ class Service : public GATTinstance
         void Create();
 };
 
+typedef void GATTScallbackType(esp_ble_gatts_cb_param_t*);
 class ServerDevice
 {
     private:
