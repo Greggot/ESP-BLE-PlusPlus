@@ -155,7 +155,7 @@ class ServerDevice
         void Start(esp_gatt_if_t GATTinterface);
     public:
         ServerDevice();
-        ServerDevice(const char* Name, std::vector<Service*> Services);
+        ServerDevice(const char* Name, std::initializer_list<Service*> Services);
 
         void setGATTSevent(esp_gatts_cb_event_t Event, GATTScallbackType* Callback);
         

@@ -47,12 +47,11 @@ esp_ble_adv_params_t ServerDevice::AdvertisingParameters = {
     .adv_filter_policy = ADV_FILTER_ALLOW_SCAN_ANY_CON_ANY,
 };
 
-
-ServerDevice::ServerDevice(const char* Name, std::vector<Service*> Services)
+ServerDevice::ServerDevice(const char* Name, std::initializer_list<Service*> ServiceList)
 {
     this->Name = Name;
-
-    this->Services = Services;
+    for(auto service : ServiceList)
+        Services.push_back(service);
 
     ESP_ERROR_CHECK(esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT));
 
