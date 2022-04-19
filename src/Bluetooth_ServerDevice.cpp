@@ -189,6 +189,7 @@ void ServerDevice::HandleGATTSevents(esp_gatts_cb_event_t event, esp_gatt_if_t g
     }
     case ESP_GATTS_MTU_EVT:
         printf("New MTU size: %d\n", param->mtu.mtu);
+        Characteristic::setMTU(param->mtu.mtu);
         break;
     case ESP_GATTS_UNREG_EVT:
     case ESP_GATTS_ADD_INCL_SRVC_EVT:

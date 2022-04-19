@@ -18,6 +18,10 @@
 #define BLE_CHARACTERISTICS_PRINTF
 #define BLE_INPUT_PRINTF
 
+#ifdef BLE_INPUT_PRINTF
+    #define MAX_OUTPUT_AMOUNT 40
+#endif
+
 typedef __uint8_t byte;
 
 namespace Perm
@@ -103,8 +107,11 @@ class Characteristic : public GATTinstance
         WriteCallback WriteHandler = [](Characteristic* ch, const uint16_t len, const void* value){
             ch->setData(value, len);
         };
-
+        static uint16_t MTU;
     public:
+        Characteristic(uint32_t _UUID, esp_gatt_perm_t, esp_gatt_char_prop_t);
+        Characteristic(uint8_t _UUID[ESP_UUID_LEN_128], esp_gatt_perm_t, esp_gatt_char_prop_t);
+        
         void setReadCallback(ReadCallback call) { ReadHandler = call; }
         void setWriteCallback(WriteCallback call) { WriteHandler = call; }
         
@@ -121,8 +128,9 @@ class Characteristic : public GATTinstance
         void Notify(const void* Data, size_t DataSize, uint16_t connected_device_id = 0) const;
         void Responce(const void* Data, size_t DataSize, esp_ble_gatts_cb_param_t* Param) const;
 
-        Characteristic(uint32_t _UUID, esp_gatt_perm_t, esp_gatt_char_prop_t);
-        Characteristic(uint8_t _UUID[ESP_UUID_LEN_128], esp_gatt_perm_t, esp_gatt_char_prop_t);
+        static void setMTU(uint16_t);
+
+        ~Characteristic();
 };
 
 class Service : public GATTinstance

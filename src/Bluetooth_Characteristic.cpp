@@ -1,6 +1,9 @@
 #include <Bluetooth.hpp>
 
-#define MAX_MTU 512
+#define MAX_MTU 517
+#define MIN_MTU 23
+#define getCorrectSize(size) size > MTU ? MTU : size
+uint16_t Characteristic::MTU = MIN_MTU;
 
 Characteristic::Characteristic(uint32_t ID, esp_gatt_perm_t Permition, esp_gatt_char_prop_t Property)
     : GATTinstance(ID), Permition(Permition), Property(Property)
@@ -98,11 +101,21 @@ void Characteristic::setData(const void* Data, size_t DataSize)
 void Characteristic::setDynamicData(void* Data, size_t DataSize)
 {
     if(this->Data && DataAllocatedInsideObject)
-    {
-        byte* DataToClear = (byte*)this->Data;
-        delete[] DataToClear;
-    }
+        delete[] (uint8_t*)this->Data;
+    this->DataSize = getCorrectSize(DataSize);
+
     this->Data = Data;
-    this->DataSize = DataSize;
     DataAllocatedInsideObject = false;
+}
+
+void Characteristic::setMTU(uint16_t MTU)
+{
+    if(MTU <= MAX_MTU && MTU >= MIN_MTU)
+        Characteristic::MTU = MTU;
+}
+
+Characteristic::~Characteristic()
+{
+    if(this->Data && DataAllocatedInsideObject)
+        delete[] (uint8_t*)this->Data;
 }
