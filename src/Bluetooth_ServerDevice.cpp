@@ -53,29 +53,27 @@ esp_ble_adv_params_t ServerDevice::AdvertisingParameters = {
     .adv_filter_policy = ADV_FILTER_ALLOW_SCAN_ANY_CON_ANY,
 };
 
-static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
+std::vector<Service*> ServerDevice::Services;
+GATTScallbackType* ServerDevice::DeviceCallbacks[MaxEventNumber] = {NULL};
+GAPcallbackType*   ServerDevice::GAPcalls[ESP_GAP_BLE_EVT_MAX] = {nullptr};
+
+void ServerDevice::HandleGAPevents(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 {
-    switch (event) {
+    printf("GAP event %u\n", (int)event);
+    if(GAPcalls[(int)event])
+        GAPcalls[(int)event](param);
+
+    switch (event) 
+    {
     case ESP_GAP_BLE_ADV_DATA_SET_COMPLETE_EVT:
     case ESP_GAP_BLE_SCAN_RSP_DATA_SET_COMPLETE_EVT:
-            esp_ble_gap_start_advertising(&ServerDevice::AdvertisingParameters);
-        break;
-    case ESP_GAP_BLE_UPDATE_CONN_PARAMS_EVT:
-        printf("\tUpdate connection params status = %d, min_int = %d, max_int = %d,conn_int = %d,latency = %d, timeout = %d\n",
-                  param->update_conn_params.status,
-                  param->update_conn_params.min_int,
-                  param->update_conn_params.max_int,
-                  param->update_conn_params.conn_int,
-                  param->update_conn_params.latency,
-                  param->update_conn_params.timeout);
+            esp_ble_gap_start_advertising(&AdvertisingParameters);
         break;
     default:
         break;
     }
 }
 
-std::vector<Service*> ServerDevice::Services;
-GATTScallbackType* ServerDevice::DeviceCallbacks[MaxEventNumber] = {NULL};
 
 ServerDevice::ServerDevice(const char* Name, std::initializer_list<Service*> ServiceList)
 {
@@ -93,7 +91,7 @@ ServerDevice::ServerDevice(const char* Name, std::initializer_list<Service*> Ser
     esp_bluedroid_enable();
 
     esp_ble_gatts_register_callback(ServerDevice::HandleGATTSevents);  
-    esp_ble_gap_register_callback(gap_event_handler);
+    esp_ble_gap_register_callback(ServerDevice::HandleGAPevents);
     esp_ble_gatts_app_register(0);
 }
 
@@ -115,9 +113,8 @@ void ServerDevice::HandleGATTSevents(esp_gatts_cb_event_t event, esp_gatt_if_t g
     static std::map <uint16_t, Characteristic*> Chars;
     static std::map <uint16_t, Service*> AllServices;
 
-    int eventNumber = static_cast<int>(event);
-    if(eventNumber < MaxEventNumber && DeviceCallbacks[eventNumber] != NULL)
-        DeviceCallbacks[eventNumber](param);
+    if(DeviceCallbacks[(int)event] != NULL)
+        DeviceCallbacks[(int)event](param);
 
     switch (event) 
     {
@@ -223,12 +220,12 @@ void ServerDevice::HandleGATTSevents(esp_gatts_cb_event_t event, esp_gatt_if_t g
     }
 }
 
-static int eventNumber;
-void ServerDevice::setGATTSevent(esp_gatts_cb_event_t Event, GATTScallbackType* Callback)
+void ServerDevice::setGATTSevent(esp_gatts_cb_event_t Event, GATTScallbackType* call)
 {
-    eventNumber = static_cast<int>(Event);
-    if(eventNumber > MaxEventNumber)
-        return;
-    
-    this->DeviceCallbacks[eventNumber] = Callback;
+    DeviceCallbacks[(int)Event] = call;
+}
+
+void ServerDevice::setGAPevent(esp_gap_ble_cb_event_t Event, GAPcallbackType* call)
+{
+    GAPcalls[(int)Event] = call;
 }
