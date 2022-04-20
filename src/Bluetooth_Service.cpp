@@ -1,38 +1,29 @@
 #include <Bluetooth.hpp>
-#include <cstring>
 
-Service::Service(uint32_t _UUID, std::vector<Characteristic*> Characteristics)
+Service::Service(const uint32_t ID, const std::vector<Characteristic*> Characteristics)
+    : GATTinstance(ID), Characteristics(Characteristics), CharacteristicsSize(Characteristics.size())
 {
-    this->service_id.is_primary = true;
-    this->service_id.id.inst_id = 0x00;
-    
-    this->UUID.len = _UUID & 0xFFFF0000 ? sizeof(uint32_t) : sizeof(uint16_t);
-    memcpy(&this->UUID.uuid, &_UUID, this->UUID.len);
-    this->service_id.id.uuid = this->UUID;
+    serviceID.is_primary = true;
+    serviceID.id.inst_id = 0x00;
+    serviceID.id.uuid = UUID;
+}
 
-    this->Characteristics = Characteristics;
-    this->CharacteristicsSize = Characteristics.size();
+Service::Service(uint8_t ID[ESP_UUID_LEN_128], const std::vector<Characteristic*> Characteristics)
+    : GATTinstance(ID), Characteristics(Characteristics), CharacteristicsSize(Characteristics.size())
+{
+    serviceID.is_primary = true;
+    serviceID.id.inst_id = 0x00;
+    serviceID.id.uuid = UUID;
 }
 
 void Service::Create()
 {
-    this->num_handle = 4 + (CharacteristicsSize << 1);
-    esp_ble_gatts_create_service(this->GATTinterface, &service_id, num_handle);
+    esp_ble_gatts_create_service(GATTinterface, &serviceID, 4 + (CharacteristicsSize << 1));
 }
 
 void Service::Start()
 {
-    esp_ble_gatts_start_service(this->Handler);
-    for(size_t i = 0; i < CharacteristicsSize; i++)
-    {
-        Characteristics[i]->AttachToService(this->Handler);
-        Characteristics[i]->setGATTinterface(this->GATTinterface);
-    }
-}
-
-void Service::setGATTinterface(esp_gatt_if_t GATTinterface)
-{ 
-    this->GATTinterface = GATTinterface; 
-    for(size_t i = 0; i < CharacteristicsSize; i++)
-        Characteristics[i]->setGATTinterface(GATTinterface);
+    esp_ble_gatts_start_service(Handler);
+    for(auto ch : Characteristics)
+        ch->AttachToService(Handler);
 }
