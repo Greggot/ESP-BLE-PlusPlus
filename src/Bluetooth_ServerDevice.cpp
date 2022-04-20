@@ -74,17 +74,18 @@ void ServerDevice::HandleGAPevents(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_
     }
 }
 
-
 ServerDevice::ServerDevice(const char* Name, std::initializer_list<Service*> ServiceList)
 {
     this->Name = Name;
     for(auto service : ServiceList)
         Services.push_back(service);
-
     ESP_ERROR_CHECK(esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT));
+}
+
+void ServerDevice::Enable()
+{
 
     esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
-    
     esp_bt_controller_init(&bt_cfg);
     esp_bt_controller_enable(ESP_BT_MODE_BLE);
     esp_bluedroid_init();
@@ -93,6 +94,23 @@ ServerDevice::ServerDevice(const char* Name, std::initializer_list<Service*> Ser
     esp_ble_gatts_register_callback(ServerDevice::HandleGATTSevents);  
     esp_ble_gap_register_callback(ServerDevice::HandleGAPevents);
     esp_ble_gatts_app_register(0);
+}
+
+
+uint8_t ServerDevice::serviceCounter = 0;
+uint8_t ServerDevice::charCounter = 0;
+
+void ServerDevice::Disable()
+{
+    printf("Disabling BLE...\n");
+    esp_bluedroid_disable();
+    esp_bluedroid_deinit();
+    esp_bt_controller_disable();
+    esp_bt_controller_deinit();
+
+    serviceCounter = 0;
+    charCounter = 0;
+
 }
 
 /**
@@ -177,7 +195,6 @@ void ServerDevice::HandleGATTSevents(esp_gatts_cb_event_t event, esp_gatt_if_t g
 
     case ESP_GATTS_CREATE_EVT:
     {
-        static uint8_t serviceCounter = 0;
         Services[serviceCounter]->setHandler(param->create.service_handle);
         Services[serviceCounter]->Start();
 
@@ -187,13 +204,12 @@ void ServerDevice::HandleGATTSevents(esp_gatts_cb_event_t event, esp_gatt_if_t g
         Services[serviceCounter]->ConsoleInfoOut();
         #endif
 
-        ++serviceCounter;
+        if(++serviceCounter == Services.size())
+            serviceCounter = 0;
         break;
     }
     case ESP_GATTS_ADD_CHAR_EVT:
     {
-        static uint8_t serviceCounter = 0;
-        static uint8_t charCounter = 0;
         Characteristic* ch = Services[serviceCounter]->getCharacteristics()[charCounter];
         
         ch->setHandler(param->add_char.attr_handle);

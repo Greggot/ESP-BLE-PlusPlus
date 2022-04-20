@@ -169,6 +169,9 @@ class ServerDevice
         static void HandleGAPevents(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param);
 
         static void Start();
+
+        static uint8_t serviceCounter;
+        static uint8_t charCounter;
     public:
         ServerDevice();
         ServerDevice(const char* Name, std::initializer_list<Service*> Services);
@@ -176,4 +179,6 @@ class ServerDevice
         void setGATTSevent(esp_gatts_cb_event_t Event, GATTScallbackType* Callback);
         void setGAPevent(esp_gap_ble_cb_event_t Event, GAPcallbackType* call);
 
+        static void Enable();
+        static void Disable();
 };
