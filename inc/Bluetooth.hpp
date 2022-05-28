@@ -172,6 +172,7 @@ class ServerDevice
 
         static uint8_t serviceCounter;
         static uint8_t charCounter;
+        static bool isEnabled;
     public:
         ServerDevice();
         ServerDevice(const char* Name, std::initializer_list<Service*> Services);
