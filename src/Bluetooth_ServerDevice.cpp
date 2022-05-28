@@ -145,7 +145,7 @@ void ServerDevice::HandleGATTSevents(esp_gatts_cb_event_t event, esp_gatt_if_t g
         // Will crash without searching - nullptr can't call anything
         auto result = Chars.find(param->write.handle);
         if(result != Chars.end())
-            Chars[param->read.handle]->callReadCallback(param);   
+            result->second->callReadCallback(param);   
         else
             esp_ble_gatts_send_response(GATTinterface, param->read.conn_id, param->read.trans_id, ESP_GATT_OK, NULL);
         break;
