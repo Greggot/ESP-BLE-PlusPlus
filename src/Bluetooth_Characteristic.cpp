@@ -67,7 +67,7 @@ void Characteristic::Responce(const void* Data, size_t DataSize, esp_ble_gatts_c
  */ 
 void Characteristic::Notify(const void* Data, size_t DataSize, uint16_t ConnectedDeviceID) const
 {
-    if(Property & ESP_GATT_CHAR_PROP_BIT_NOTIFY)
+    if(Property & Prop::Notify && GATTinterface)
         esp_ble_gatts_send_indicate(GATTinterface, ConnectedDeviceID, Handler, getCorrectSize(DataSize), (uint8_t*)Data, false);
 }
 
