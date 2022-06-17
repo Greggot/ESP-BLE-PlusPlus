@@ -13,6 +13,7 @@
 #include <vector>
 #include <map>
 #include <cstring>
+#include <functional>
 
 #define BLE_SERVICES_PRINTF
 #define BLE_CHARACTERISTICS_PRINTF
@@ -87,11 +88,13 @@ class GATTinstance
         void setHandler(uint16_t Handler) { this->Handler = Handler; }
 };
 
+#define getCorrectSize(size) size > MTU ? MTU : size
+
 class Characteristic : public GATTinstance
 {
     private:
-        typedef void (*WriteCallback)(Characteristic*, const uint16_t, const void*);
-        typedef void (*ReadCallback)(const Characteristic*, esp_ble_gatts_cb_param_t *param);
+        typedef std::function<void(const Characteristic*, esp_ble_gatts_cb_param_t*)> ReadCallback;
+        typedef std::function<void(Characteristic*, const uint16_t, const void*)> WriteCallback;
     
         esp_attr_value_t  CharData;
         const esp_gatt_perm_t Permition;
@@ -122,6 +125,13 @@ class Characteristic : public GATTinstance
         void* getData() const { return Data; }
         size_t getDataSize() const { return DataSize; }
 
+        
+        template<class type>
+        void Notify(const type data, size_t size = sizeof(type), uint16_t connID = 0) const
+        {
+            if(Property & Prop::Notify && GATTinterface)
+                esp_ble_gatts_send_indicate(GATTinterface, connID, Handler, getCorrectSize(size), (uint8_t*)&data, false);
+        }
         void Notify(const void* Data, size_t DataSize, uint16_t connected_device_id = 0) const;
         void Responce(const void* Data, size_t DataSize, esp_ble_gatts_cb_param_t* Param) const;
 

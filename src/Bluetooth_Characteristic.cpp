@@ -2,7 +2,6 @@
 
 #define MAX_MTU 517
 #define MIN_MTU 23
-#define getCorrectSize(size) size > MTU ? MTU : size
 uint16_t Characteristic::MTU = MIN_MTU;
 
 Characteristic::Characteristic(uint32_t ID, esp_gatt_perm_t Permition, esp_gatt_char_prop_t Property)
@@ -67,7 +66,7 @@ void Characteristic::Responce(const void* Data, size_t DataSize, esp_ble_gatts_c
  */ 
 void Characteristic::Notify(const void* Data, size_t DataSize, uint16_t ConnectedDeviceID) const
 {
-    if(Property & ESP_GATT_CHAR_PROP_BIT_NOTIFY)
+    if(Property & Prop::Notify && GATTinterface)
         esp_ble_gatts_send_indicate(GATTinterface, ConnectedDeviceID, Handler, getCorrectSize(DataSize), (uint8_t*)Data, false);
 }
 
