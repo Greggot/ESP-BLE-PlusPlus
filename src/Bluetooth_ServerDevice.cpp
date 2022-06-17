@@ -103,11 +103,13 @@ uint8_t ServerDevice::charCounter = 0;
 void ServerDevice::Disable()
 {
     printf("Disabling BLE...\n");
+    esp_ble_gatts_close(GATTinterface, 0);
     esp_bluedroid_disable();
     esp_bluedroid_deinit();
     esp_bt_controller_disable();
     esp_bt_controller_deinit();
 
+    GATTinterface = 0;
     serviceCounter = 0;
     charCounter = 0;
 
