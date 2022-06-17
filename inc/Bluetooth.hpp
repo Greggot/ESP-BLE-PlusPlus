@@ -172,6 +172,7 @@ class ServerDevice
 
         static uint8_t serviceCounter;
         static uint8_t charCounter;
+        static bool isEnabled;
     public:
         ServerDevice();
         ServerDevice(const char* Name, std::initializer_list<Service*> Services);
@@ -179,6 +180,7 @@ class ServerDevice
         void setGATTSevent(esp_gatts_cb_event_t Event, GATTScallbackType* Callback);
         void setGAPevent(esp_gap_ble_cb_event_t Event, GAPcallbackType* call);
 
+        static bool Status() { return isEnabled; }
         static void Enable();
         static void Disable();
 };

@@ -1,6 +1,7 @@
 #include <Bluetooth.hpp>
 
 ServerDevice::ServerDevice() {}
+bool ServerDevice::isEnabled = false;
 
 esp_gatt_if_t GATTinterface = 0;
 const char* ServerDevice::Name = "None";
@@ -67,6 +68,7 @@ void ServerDevice::HandleGAPevents(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_
     {
     case ESP_GAP_BLE_ADV_DATA_SET_COMPLETE_EVT:
     case ESP_GAP_BLE_SCAN_RSP_DATA_SET_COMPLETE_EVT:
+            if(isEnabled)
             esp_ble_gap_start_advertising(&AdvertisingParameters);
         break;
     default:
@@ -84,7 +86,9 @@ ServerDevice::ServerDevice(const char* Name, std::initializer_list<Service*> Ser
 
 void ServerDevice::Enable()
 {
-
+    if(isEnabled)
+        return;
+    isEnabled = true;
     esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
     esp_bt_controller_init(&bt_cfg);
     esp_bt_controller_enable(ESP_BT_MODE_BLE);
@@ -102,6 +106,9 @@ uint8_t ServerDevice::charCounter = 0;
 
 void ServerDevice::Disable()
 {
+    if(!isEnabled)
+        return;
+    isEnabled = false;
     printf("Disabling BLE...\n");
     esp_ble_gatts_close(GATTinterface, 0);
     esp_bluedroid_disable();
