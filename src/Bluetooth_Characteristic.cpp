@@ -2,7 +2,6 @@
 
 #define MAX_MTU 517
 #define MIN_MTU 23
-#define getCorrectSize(size) size > MTU ? MTU : size
 uint16_t Characteristic::MTU = MIN_MTU;
 
 Characteristic::Characteristic(uint32_t ID, esp_gatt_perm_t Permition, esp_gatt_char_prop_t Property)

@@ -69,7 +69,7 @@ void ServerDevice::HandleGAPevents(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_
     case ESP_GAP_BLE_ADV_DATA_SET_COMPLETE_EVT:
     case ESP_GAP_BLE_SCAN_RSP_DATA_SET_COMPLETE_EVT:
             if(isEnabled)
-                esp_ble_gap_start_advertising(&AdvertisingParameters);
+            esp_ble_gap_start_advertising(&AdvertisingParameters);
         break;
     default:
         break;
@@ -110,6 +110,7 @@ void ServerDevice::Disable()
         return;
     isEnabled = false;
     printf("Disabling BLE...\n");
+    esp_ble_gatts_close(GATTinterface, 0);
     esp_bluedroid_disable();
     esp_bluedroid_deinit();
     esp_bt_controller_disable();
