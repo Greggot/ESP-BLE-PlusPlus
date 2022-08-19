@@ -1,4 +1,4 @@
-#include <Bluetooth.hpp>
+#include <Bluetooth.Characteristic.hpp>
 
 #define MAX_MTU 517
 #define MIN_MTU 23
@@ -64,10 +64,10 @@ void Characteristic::Responce(const void* Data, size_t DataSize, esp_ble_gatts_c
 /**
  * @brief Notify without confirmation
  */ 
-void Characteristic::Notify(const void* Data, size_t DataSize, uint16_t ConnectedDeviceID) const
+void Characteristic::Notify(const void* data, size_t size, uint16_t ConnectedDeviceID) const
 {
     if(Property & Prop::Notify && GATTinterface)
-        esp_ble_gatts_send_indicate(GATTinterface, ConnectedDeviceID, Handler, getCorrectSize(DataSize), (uint8_t*)Data, false);
+        esp_ble_gatts_send_indicate(GATTinterface, ConnectedDeviceID, Handler, getCorrectSize(size), (uint8_t*)data, false);
 }
 
 /**
@@ -79,7 +79,7 @@ void Characteristic::setData(const void* Data, size_t DataSize)
         delete[] (uint8_t*)this->Data;
     this->DataSize = getCorrectSize(DataSize);
 
-    this->Data = new byte[DataSize];    
+    this->Data = new uint8_t[DataSize];    
     memcpy(this->Data, Data, this->DataSize);
     DataAllocatedInsideObject = true;
 }
