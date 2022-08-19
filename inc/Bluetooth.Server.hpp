@@ -11,7 +11,7 @@ namespace Bluetooth
 {
     typedef void GATTScallbackType(esp_ble_gatts_cb_param_t*);
     typedef void GAPcallbackType(esp_ble_gap_cb_param_t*);
-    class ServerDevice
+    class Server
     {
     private:
         static const uint8_t MaxEventNumber = 24;
@@ -34,8 +34,8 @@ namespace Bluetooth
         static uint8_t charCounter;
         static bool isEnabled;
     public:
-        ServerDevice();
-        ServerDevice(const char* Name, std::initializer_list<Service*> Services);
+        Server();
+        Server(const char* Name, std::initializer_list<Service*> Services);
 
         void setGATTSevent(esp_gatts_cb_event_t Event, GATTScallbackType* Callback);
         void setGAPevent(esp_gap_ble_cb_event_t Event, GAPcallbackType* call);
