@@ -2,8 +2,10 @@
 #include <Bluetooth.Characteristic.hpp>
 #include <vector>
 
-class Service : public GATTinstance
+namespace Bluetooth
 {
+    class Service : public GATTinstance
+    {
     private:
         esp_gatt_srvc_id_t serviceID;
         
@@ -18,4 +20,5 @@ class Service : public GATTinstance
 
         void Start();
         void Create();
-};
+    };
+}

@@ -7,10 +7,12 @@
 #include <vector>
 #include <map>
 
-typedef void GATTScallbackType(esp_ble_gatts_cb_param_t*);
-typedef void GAPcallbackType(esp_ble_gap_cb_param_t*);
-class ServerDevice
+namespace Bluetooth
 {
+    typedef void GATTScallbackType(esp_ble_gatts_cb_param_t*);
+    typedef void GAPcallbackType(esp_ble_gap_cb_param_t*);
+    class ServerDevice
+    {
     private:
         static const uint8_t MaxEventNumber = 24;
 
@@ -41,4 +43,5 @@ class ServerDevice
         static bool Status() { return isEnabled; }
         static void Enable();
         static void Disable();
-};
+    };
+}

@@ -1,4 +1,5 @@
 #include <Bluetooth.Service.hpp>
+using namespace Bluetooth;
 
 Service::Service(const uint32_t ID, const std::vector<Characteristic*> Characteristics)
     : GATTinstance(ID), Characteristics(Characteristics), CharacteristicsSize(Characteristics.size())

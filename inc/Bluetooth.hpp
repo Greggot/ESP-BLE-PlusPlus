@@ -9,6 +9,8 @@
     #define MAX_OUTPUT_AMOUNT 40
 #endif
 
+#define BLE Bluetooth
+
 namespace Perm
 {
     enum bit

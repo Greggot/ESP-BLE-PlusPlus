@@ -5,8 +5,10 @@
 
 #define getCorrectSize(size) size > MTU ? MTU : size
 
-class Characteristic : public GATTinstance
+namespace Bluetooth
 {
+    class Characteristic : public GATTinstance
+    {
     private:
         typedef std::function<void(const Characteristic*, esp_ble_gatts_cb_param_t*)> ReadCallback;
         typedef std::function<void(Characteristic*, const uint16_t, const void*)> WriteCallback;
@@ -53,4 +55,5 @@ class Characteristic : public GATTinstance
         static void setMTU(uint16_t);
 
         ~Characteristic();
-};
+    };
+}

@@ -1,9 +1,10 @@
 #include <Bluetooth.Server.hpp>
+using namespace Bluetooth;
 
 ServerDevice::ServerDevice() {}
 bool ServerDevice::isEnabled = false;
 
-esp_gatt_if_t GATTinterface = 0;
+esp_gatt_if_t BLE::GATTinterface = 0;
 const char* ServerDevice::Name = "None";
 static uint8_t adv_service_uuid128[] = 
 {

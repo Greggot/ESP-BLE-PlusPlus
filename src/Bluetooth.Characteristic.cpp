@@ -1,4 +1,5 @@
 #include <Bluetooth.Characteristic.hpp>
+using namespace Bluetooth;
 
 #define MAX_MTU 517
 #define MIN_MTU 23

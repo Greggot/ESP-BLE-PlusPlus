@@ -9,9 +9,11 @@
 
 #include <Bluetooth.hpp>
 
-extern esp_gatt_if_t GATTinterface;
-class GATTinstance
+namespace Bluetooth
 {
+    extern esp_gatt_if_t GATTinterface;
+    class GATTinstance
+    {
     protected:
         esp_bt_uuid_t UUID;
         uint16_t Handler;
@@ -38,4 +40,5 @@ class GATTinstance
         
         uint16_t getHandler() { return Handler; }
         void setHandler(uint16_t Handler) { this->Handler = Handler; }
-};
+    };
+}
