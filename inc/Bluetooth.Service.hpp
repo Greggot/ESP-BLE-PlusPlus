@@ -10,13 +10,13 @@ namespace Bluetooth
         esp_gatt_srvc_id_t serviceID;
         
         const std::vector<Characteristic*> Characteristics;
-        const size_t CharacteristicsSize;
+        const size_t characteristicAmount;
     public:
-        const std::vector<Characteristic*> getCharacteristics() const { return Characteristics; }
-        size_t getCharacteristicsSize() const { return CharacteristicsSize; }
+        Characteristic& getCharacteristic(size_t index) { return *Characteristics[index]; }
+        size_t getCharsAmount() const { return characteristicAmount; }
 
-        Service(const uint32_t UUID, const std::vector<Characteristic*> Characteristics);
-        Service(uint8_t UUID[ESP_UUID_LEN_128], const std::vector<Characteristic*> Characteristics);
+        Service(const uint32_t UUID, const std::initializer_list<Characteristic*> Characteristics);
+        Service(uint8_t UUID[ESP_UUID_LEN_128], const std::initializer_list<Characteristic*> Characteristics);
 
         void Start();
         void Create();

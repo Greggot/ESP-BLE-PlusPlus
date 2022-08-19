@@ -138,8 +138,7 @@ void Server::Start()
 
 void Server::HandleGATTSevents(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param)
 {   
-    static std::map <uint16_t, Characteristic*> Chars;
-    static std::map <uint16_t, Service*> AllServices;
+    static std::map <uint16_t, Characteristic&> Chars;
 
     if(DeviceCallbacks[(int)event] != NULL)
         DeviceCallbacks[(int)event](param);
@@ -155,7 +154,7 @@ void Server::HandleGATTSevents(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_i
         // Will crash without searching - nullptr can't call anything
         auto result = Chars.find(param->write.handle);
         if(result != Chars.end())
-            result->second->callReadCallback(param);   
+            result->second.callReadCallback(param);   
         else
             esp_ble_gatts_send_response(GATTinterface, param->read.conn_id, param->read.trans_id, ESP_GATT_OK, NULL);
         break;
@@ -166,7 +165,7 @@ void Server::HandleGATTSevents(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_i
         // Will crash without searching - nullptr can't call anything
         auto result = Chars.find(param->write.handle);
         if(result != Chars.end())
-            result->second->callWriteCallback(param);
+            result->second.callWriteCallback(param);
 
         #ifdef BLE_INPUT_PRINTF
         if(param->write.len < MAX_OUTPUT_AMOUNT)
@@ -208,8 +207,6 @@ void Server::HandleGATTSevents(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_i
         Services[serviceCounter]->setHandler(param->create.service_handle);
         Services[serviceCounter]->Start();
 
-        AllServices.insert({param->create.service_handle, Services[serviceCounter]});
-
         #ifdef BLE_SERVICES_PRINTF 
         Services[serviceCounter]->ConsoleInfoOut();
         #endif
@@ -220,17 +217,17 @@ void Server::HandleGATTSevents(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_i
     }
     case ESP_GATTS_ADD_CHAR_EVT:
     {
-        Characteristic* ch = Services[serviceCounter]->getCharacteristics()[charCounter];
+        Characteristic& ch = Services[serviceCounter]->getCharacteristic(charCounter);
         
-        ch->setHandler(param->add_char.attr_handle);
+        ch.setHandler(param->add_char.attr_handle);
         Chars.insert({param->add_char.attr_handle, ch});
 
         #ifdef BLE_CHARACTERISTICS_PRINTF
         printf("\t");
-        ch->ConsoleInfoOut();
+        ch.ConsoleInfoOut();
         #endif
 
-        if(++charCounter == Services[serviceCounter]->getCharacteristicsSize())
+        if(++charCounter == Services[serviceCounter]->getCharsAmount())
         {
             charCounter = 0;
             ++serviceCounter;
