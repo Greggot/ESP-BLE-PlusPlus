@@ -18,7 +18,7 @@ namespace Bluetooth
         esp_bt_uuid_t UUID;
         uint16_t Handler;
     public:
-        GATTinstance(uint32_t ID)
+        GATTinstance(const uint32_t ID)
         {
             UUID.len = ID & 0xFFFF0000 ? sizeof(uint32_t) : sizeof(uint16_t);
             memcpy(&UUID.uuid, &ID, UUID.len);
@@ -28,6 +28,7 @@ namespace Bluetooth
             UUID.len = ESP_UUID_LEN_128;
             memcpy(&UUID.uuid, ID, UUID.len);
         }
+        
         #if defined BLE_SERVICES_PRINTF || defined BLE_CHARACTERISTICS_PRINTF
         void ConsoleInfoOut()
         {
