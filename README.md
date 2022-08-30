@@ -6,25 +6,26 @@
 - Define callbacks for device and characteristic events
 - Use notifications to send data to client
 
-Original ESP-IDF Bluetooth library is too complicated to work with: almoust no abstraction mechanism is present. Thus, this library make sure to enable `bluedroid` and advertising by itself; let user write independed callback functions with no need to implement one giant `switch-case` construction.
+Original ESP-IDF Bluetooth library is too complicated to work with. Just look at example BLE project.  
+Hence, I have written OOP-wrapper, which helps with creating BLE server. There is no more need in huge *switch-case* constructions - all of 'em are hidden inside classes implementation.
 
 ## Library structure
 
 ```text
-ServerDevice
+Server
 |---Service <-------------------|
 |---|---Characteristic <--------|
                                 |
-                            GATTinstance
+                              GATT
 ```
 
-`GATTinstance` - class which represents `UUID` and `Handler`. These are unique for each characteristic and service, thus instance is inherited by them.
+`GATT` - abstraction for `UUID` and `Handler`. These are unique for each characteristic and service, thus class is inherited by them.
 
 `Characteristic` - class which holds read/write callbacks, characteristic's data and notify method. So, object of this class serves as IO for some abstract purpose. It can communicate with client via incoming requests or async notifications.
 
 `Service` - a set of characteristics united by a single abstract responcibility.
 
-`ServerDevice` - class that holds device events, de/initializes all the classes' objects described above. Device events divide into two types: `GAP`'s and `GATTS`'s ones. `GAP` events occur on network layer: advertisement, dis/connect and so on. `GATTS` are ones that occure while working with characteristics and services. This events used to initialize these instances: give each the `UUID` and `Handler`.  
+`Server` - class that holds device events, de/initializes all the classes' objects described above. Device events divide into two types: `GAP`'s and `GATTS`'s ones. `GAP` events occur on network layer: advertisement, dis/connect and so on. `GATTS` are ones that occure while working with characteristics and services. This events used to initialize these instances: give each the `UUID` and `Handler`.  
 
 ## Callbacks
 
@@ -32,9 +33,9 @@ ServerDevice
 
 As for events, there are two types of callbacks: `GAP` and `GATTS`.
 
-Characteristic class holds two specific `GATTS` events: `read` and `write`. They are received as a general `GATTS` event by `ServerDevice`. Requests have data in it and a handler of target, which is a characteristic. A set of `Characteristic` is being searched by given handler to call propriate callback.
+Characteristic class holds two specific `GATTS` events: `read` and `write`. They are received as a general `GATTS` event by `Server`. Requests have data in it and a handler of target, which is a characteristic. A set of `Characteristic` is being searched by given handler to call propriate callback.
 
-All the other `GAP`-`GATTS` callbacks are executed by `ServerDevice`.
+All the other `GAP`-`GATTS` callbacks are executed by `Server`.
 
 ## Usage
 
@@ -44,15 +45,16 @@ To create BLE point you gotta write something like:
 
 ```C++
 #include <Bluetooth.hpp>
+using namespace BLE;
 
 void app_main()
 {
     static Characteristic characteristic = Characteristic(0xAAAA, 
-        Perm::Read|Perm::Write, Prop::Read|Prop::Write);
+        permition::Read|permition::Write, property::Read|property::Write);
     static Service service = Service(0xBBBB, {&characteristic});
 
-    ServerDevice server("Name", { &service /*, &other, &services, &here,*/ });
-    ServerDevice::Enable();
+    Server server("Name", { &service /*, &other, &services, &here,*/ });
+    Server::Enable();
 }
 
 ```
@@ -64,8 +66,8 @@ Created characteristic is being linked to service. Then service is being linked 
 Inside `Characteristic` there are these typedefs:
 
 ```C++
-typedef void (*WriteCallback)(Characteristic*, const uint16_t, const void*);
-typedef void (*ReadCallback)(const Characteristic*, esp_ble_gatts_cb_param_t *param);
+typedef std::function<void(Characteristic*, const uint16_t, const void*)> WriteCallback;
+typedef std::function<void(const Characteristic*, esp_ble_gatts_cb_param_t *param)> ReadCallback;
 ```
 
 You can create a function and then link it to the characteristic, or use lambda functions:
@@ -89,15 +91,15 @@ int app_main()
     /*...*/
     static Service TimeService = Service(0xDAEA, {&TimeControl});
     
-    ServerDevice server("RemoteClock", {&TimeService});
-    ServerDevice::Enable();
+    Server server("RemoteClock", {&TimeService});
+    Server::Enable();
 }
 ```
 
 This will add
 
 ```text
-ServerDevice:           RemoteClock
+Server:           RemoteClock
 |---Service:            0xDAEA
 |---|---Characteristic: 0xDCB
 ```
@@ -106,4 +108,5 @@ Which will set time when being written and answer system time when being read
 
 ## Development
 
-This library was created during project which monitors CAN bus and sends data via BLE to mobile app. All tests were performed on [WiFi Kit 32](https://heltec.org/project/wifi-kit-32/), most of all commits stored in a private repository, so I'll try to record all changes-features as much accurate as possible. I hope it will make your life easier when using BLE on ESP32.
+This library was created during the CAN-BLE-Adapter-project. All tests performed on boards with [WiFi Kit 32](https://heltec.org/project/wifi-kit-32/) as a core processor.
+I hope it will make your life easier.
