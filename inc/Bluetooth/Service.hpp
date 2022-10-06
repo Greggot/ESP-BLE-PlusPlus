@@ -1,5 +1,5 @@
 #pragma once
-#include <Bluetooth.Characteristic.hpp>
+#include "Characteristic.hpp"
 #include <vector>
 
 namespace Bluetooth

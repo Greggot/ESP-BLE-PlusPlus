@@ -1,4 +1,4 @@
-#include <Bluetooth.Service.hpp>
+#include <Bluetooth/Service.hpp>
 using namespace Bluetooth;
 
 Service::Service(const uint32_t ID, const std::initializer_list<Characteristic*> Characteristics)

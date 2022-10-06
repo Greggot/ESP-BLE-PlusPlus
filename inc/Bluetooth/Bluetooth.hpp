@@ -1,5 +1,4 @@
 #pragma once
-#include <debug.hpp>
 
 #define BLE_SERVICES_PRINTF
 #define BLE_CHARACTERISTICS_PRINTF
