@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 
 #define BLE_SERVICES_PRINTF
 #define BLE_CHARACTERISTICS_PRINTF
